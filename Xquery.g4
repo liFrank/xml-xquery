@@ -11,31 +11,31 @@ xp  : ap
 
 // Xquery sub-language for the project, entry point
 xq	: Var
-	| StringConstant
+	| String
 	| ap
 	| '(' xq ')'
 	| xq ',' xq
 	| xq '/' rp
 	| xq '//' rp
-	| '<' TagName '>' '{' xq '}' '</' TagName '>'
+	| '<' Name '>' '{' xq '}' '</' Name '>'
 	| forClause (letClause | /*epsilon*/) (whereClause | /*epsilon*/) returnClause
 	| letClause xq
 	;
 		
 // absolute path 
-ap 	: 'doc("' FileName '")/' rp 
-	| 'doc("' FileName '")//' rp
-	| 'document("' FileName '")/' rp 
-	| 'document("' FileName '")//' rp 
+ap 	: 'doc(' String ')/' rp 
+	| 'doc(' String ')//' rp
+	| 'document(' String ')/' rp 
+	| 'document(' String ')//' rp 
 	;
 	
 // relative path
-rp	: TagName
+rp	: Name
 	| '*'
 	| '..'
 	| '.'
 	| 'text()'
-	| '@' AttName
+	| '@' Name
 	| '(' rp ')'
 	| rp '/' rp
 	| rp '//' rp
@@ -76,17 +76,18 @@ cond	: xq '=' xq
 		;
 
 // Literals must be capitalized
-FileName	: ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '.' | '_' | '/' )( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '.' | '_' | '/' )*;
 
-TagName 	: ( 'a' .. 'z' | 'A' .. 'Z' | '_' )( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' )*;
+// attName, tagName
+Name 		: ( 'a' .. 'z' | 'A' .. 'Z' | '_' )( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' )*;
 
-AttName 	: ( 'a' .. 'z' | 'A' .. 'Z' | '_' )( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' )*;
+// Var
+Var			: '$' Name;
 
-Var			: '$' ( 'a' .. 'z' | 'A' .. 'Z' | '_' )( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' )*;
+// fileName, StringConstant
+String	: '"' ~('\n'|'\r')* '"';
 
-StringConstant	: '"' ~('\n'|'\r')* '"';
-
-Comment 	:  '//' ~( '\r' | '\n' )* -> skip;
+// Ignore
+//Comment 	:  '//' ~('\n')* '\n' -> skip;
   
 WS : [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
 
