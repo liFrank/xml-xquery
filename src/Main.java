@@ -5,14 +5,20 @@ public class Main {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		ANTLRInputStream input = new ANTLRInputStream( "hello there" );
-        XqueryLexer lexer = new XqueryLexer(input);
-
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-
-        XqueryParser parser = new XqueryParser(tokens);
-        ParseTree tree = parser.r(); // begin parsing at rule 'r'
-        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
+//		ANTLRInputStream input = new ANTLRInputStream( "" );
+		try {
+			ANTLRFileStream input = new ANTLRFileStream("testcase/xqueries/test1.txt");
+	        XqueryLexer lexer = new XqueryLexer(input);
+	
+	        CommonTokenStream tokens = new CommonTokenStream(lexer);
+	
+	        XqueryParser parser = new XqueryParser(tokens);
+	        ParseTree tree = parser.xq(); // begin parsing at rule 'xq'
+	        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
 
 	}
 
