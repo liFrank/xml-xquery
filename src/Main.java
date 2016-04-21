@@ -14,10 +14,9 @@ public class Main {
 	
 	        XqueryParser parser = new XqueryParser(tokens);
 	        ParseTree tree = parser.xq(); // begin parsing at rule 'xq'
-	        //ParseTreeWalker walker=new ParseTreeWalker();
-	        //SQLQueryBuilder builder= new SQLQueryBuilder();
-	        //walker.walk(builder,tree);
-	        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
+	        ParseTreeWalker walker = new ParseTreeWalker();
+	        XqueryDerivedListener listener = new XqueryDerivedListener();
+	        walker.walk(listener, tree);
 		}
 		catch (Exception e) {
 			e.printStackTrace();
