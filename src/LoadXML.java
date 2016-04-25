@@ -27,7 +27,7 @@ public class LoadXML {
         //dBuilder.setEntityResolver(resolver);
         Document doc = dBuilder.parse(inputFile);
         doc.getDocumentElement().normalize();
-        System.out.println("Root element :" + doc.getDocumentElement().getFirstChild().getNodeName());
+        System.out.println("Root element :" + doc.getDocumentElement().getNodeName());
         System.out.println("----------------------------");
 	}
 }

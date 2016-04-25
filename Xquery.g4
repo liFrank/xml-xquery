@@ -16,7 +16,7 @@ xq	: Var
 	| '(' xq ')'
 	| xq ',' xq
 	| xq '/' rp
-	| xq '//' rp
+	| xq '//' rp	//#APALL
 	| '<' Name '>' '{' xq '}' '</' Name '>'
 	| forClause (letClause | /*epsilon*/) (whereClause | /*epsilon*/) returnClause
 	| letClause xq
@@ -44,15 +44,15 @@ rp	: Name
 	;
 
 //path filter
-f	: rp
-	| rp '=' rp
-	| rp 'eq' rp
-	| rp '==' rp
-	| rp 'is' rp
-	| '(' f ')'
-	| f 'and' f
-	| f 'or' f
-	| 'not' f
+f	: rp			#Filter
+	| rp '=' rp		#FilterEqual
+	| rp 'eq' rp	#FilterEqual
+	| rp '==' rp	#FilterIs
+	| rp 'is' rp	#FilterIs
+	| '(' f ')'		#FilterParan
+	| f 'and' f		#FilterAnd
+	| f 'or' f		#FilterOr
+	| 'not' f		#FilterNot
 	;	
 
 forClause	: 'for' Var 'in' xq (',' Var 'in' xq)*;
@@ -63,16 +63,16 @@ whereClause	: 'where' cond;
 
 returnClause: 'return' xq;
 
-cond	: xq '=' xq
-		| xq 'eq' xq
-		| xq '==' xq
-		| xq 'is' xq
-		| 'empty(' xq ')'
-		| 'some' Var 'in' xq (',' Var 'in' xq)* 'satisfies' cond
-		| '(' cond ')'
-		| cond 'and' cond
-		| cond 'or' cond
-		| 'not' cond
+cond	: xq '=' xq													#ConditionEqual
+		| xq 'eq' xq												#ConditionEqual
+		| xq '==' xq												#ConditionIs
+		| xq 'is' xq												#ConditionIs
+		| 'empty(' xq ')'											#ConditionEmpty
+		| 'some' Var 'in' xq (',' Var 'in' xq)* 'satisfies' cond	#ConditionIn
+		| '(' cond ')'												#ConditionParanth
+		| cond 'and' cond											#ConditionAnd
+		| cond 'or' cond											#ConditionOr
+		| 'not' cond												#ConditionNot
 		;
 
 // Literals must be capitalized
