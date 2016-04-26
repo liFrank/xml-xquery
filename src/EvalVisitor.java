@@ -1,7 +1,14 @@
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.omg.CORBA.CTX_RESTRICT_SCOPE;
 import org.w3c.dom.*;
+import org.xml.sax.SAXException;
 
 public class EvalVisitor extends XqueryBaseVisitor<ArrayList<Node>>{
 	ArrayList<Node> cur=new ArrayList<Node>();
@@ -140,10 +147,43 @@ public class EvalVisitor extends XqueryBaseVisitor<ArrayList<Node>>{
 		}
 		return new ArrayList<Node>();
 	}
+	
+	public ArrayList<Node> Doc(String name)
+	{
+		//open a file and change the current.
+		File inputFile = new File(name);
+        DocumentBuilderFactory dbFactory= DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = null;
+		try {
+			dBuilder = dbFactory.newDocumentBuilder();
+		} catch (ParserConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        //dBuilder.setEntityResolver(resolver);
+        Document doc = null;
+		try {
+			doc = dBuilder.parse(inputFile);
+		} catch (SAXException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        doc.getDocumentElement().normalize();
+        
+        //later
+        ArrayList<Node> result = new ArrayList<Node>();
+        result.add((Node)doc);
+		//cur = result;
+		return result;
+        
+	}
 	@Override public ArrayList<Node> visitAPChildren(XqueryParser.APChildrenContext ctx)
 	{
 		//visit doc
-		
+		cur=Doc(ctx.String().getText());
 		return visitChildren(ctx);
 		
 	}
@@ -211,5 +251,19 @@ public class EvalVisitor extends XqueryBaseVisitor<ArrayList<Node>>{
 		}
 		cur=r;
 		return r;
+	}
+	@Override public ArrayList<Node> visitRPText(XqueryParser.RPTextContext ctx)
+	{
+		for(int i=0;i<cur.size();i++)
+		{
+			for(int j=0;j<cur.get(i).getChildNodes().getLength();j++)
+			{
+				if(cur.get(i).getChildNodes().item(j).getNodeType() == org.w3c.dom.Node.TEXT_NODE )//sooner may be rewrite.
+				{
+					System.out.print(cur.get(i).getChildNodes().item(j).getTextContent());
+				}
+			}
+		}
+		return cur;
 	}
 }
