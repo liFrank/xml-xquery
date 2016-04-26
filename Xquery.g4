@@ -16,31 +16,31 @@ xq	: Var
 	| '(' xq ')'
 	| xq ',' xq
 	| xq '/' rp
-	| xq '//' rp	//#APALL
+	| xq '//' rp
 	| '<' Name '>' '{' xq '}' '</' Name '>'
 	| forClause (letClause | /*epsilon*/) (whereClause | /*epsilon*/) returnClause
 	| letClause xq
 	;
 		
 // absolute path 
-ap 	: 'doc(' String ')/' rp 
-	| 'doc(' String ')//' rp
-	| 'document(' String ')/' rp 
-	| 'document(' String ')//' rp 
+ap 	: 'doc(' String ')/' rp 		#APChildren
+	| 'doc(' String ')//' rp		#APBoth
+	| 'document(' String ')/' rp 	#APChildren
+	| 'document(' String ')//' rp 	#APBoth
 	;
 	
 // relative path
-rp	: Name
-	| '*'
-	| '..'
-	| '.'
-	| 'text()'
-	| '@' Name
-	| '(' rp ')'
-	| rp '/' rp
-	| rp '//' rp
-	| rp '[' f ']'
-	| rp ',' rp 
+rp	: Name			#RPName
+	| '*'			#RPAll
+	| '..'			#RPParents
+	| '.'			#RPCurrent
+	| 'text()'		#RPText
+	| '@' Name		#RPAttribute
+	| '(' rp ')'	#RPParanth
+	| rp '/' rp		#RPChildren
+	| rp '//' rp	#RPBoth
+	| rp '[' f ']'	#RPWithFilter
+	| rp ',' rp 	#RPWithRP
 	;
 
 //path filter

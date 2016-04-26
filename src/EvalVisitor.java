@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 
+import org.omg.CORBA.CTX_RESTRICT_SCOPE;
 import org.w3c.dom.*;
 
 public class EvalVisitor extends XqueryBaseVisitor<ArrayList<Node>>{
@@ -139,5 +140,76 @@ public class EvalVisitor extends XqueryBaseVisitor<ArrayList<Node>>{
 		}
 		return new ArrayList<Node>();
 	}
+	@Override public ArrayList<Node> visitAPChildren(XqueryParser.APChildrenContext ctx)
+	{
+		//visit doc
+		
+		return visitChildren(ctx);
+		
+	}
+	@Override public ArrayList<Node> visitAPBoth(XqueryParser.APBothContext ctx)
+	{
+		//visit doc
+		
+	}
 	
+	@Override public ArrayList<Node> visitRPCurrent(XqueryParser.RPCurrentContext ctx) 
+	{
+		return cur;
+	}
+	@Override public ArrayList<Node> visitRPParents(XqueryParser.RPParentsContext ctx) 
+	{
+		ArrayList<Node> parent=new ArrayList<Node>();
+		for(int i=0;i<cur.size();i++)
+		{
+			parent.add(cur.get(i).getParentNode());
+		}
+		cur=parent;
+		return cur;
+	}
+	@Override public ArrayList<Node> visitRPParanth(XqueryParser.RPParanthContext ctx) 
+	{
+		return (visit(ctx.rp()));
+	}
+	
+	@Override public ArrayList<Node> visitRPWithRP(XqueryParser.RPWithRPContext ctx)
+	{
+		ArrayList<Node> tmp=new ArrayList<Node>();
+		tmp.addAll(cur);
+		ArrayList<Node> r=new ArrayList<Node>();
+		r.addAll(visit(ctx.rp(0)));
+		cur=tmp;
+		r.addAll(visit(ctx.rp(1)));
+		return r;
+	}
+	
+	@Override public ArrayList<Node> visitRPChildren(XqueryParser.RPChildrenContext ctx) 
+	{
+		visit(ctx.rp(0));//this is used for changing current context.
+		ArrayList<Node> result=visit(ctx.rp(1));
+		cur=result;
+		return cur;
+	}
+	public ArrayList<Node> getChildren(Node x)
+	{
+		ArrayList<Node> r=new ArrayList<Node>();
+		for(int i=0;i<x.getChildNodes().getLength();i++)
+			r.add(x.getChildNodes().item(i));
+		return r;
+	}
+	@Override public ArrayList<Node> visitRPBoth(XqueryParser.RPBothContext ctx)
+	{
+		
+	}
+	
+	@Override public ArrayList<Node> visitRPAll(XqueryParser.RPAllContext ctx)
+	{
+		ArrayList<Node> r=new ArrayList<Node>();
+		for(int i=0;i<cur.size();i++)
+		{
+			r.addAll(getChildren(cur.get(i)));
+		}
+		cur=r;
+		return r;
+	}
 }
