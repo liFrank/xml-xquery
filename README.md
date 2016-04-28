@@ -11,8 +11,17 @@ From there, you have to do the following with your version of eclipse
 2. Select project root  
 
 # ANTLR may complain about a version mismatch when running
-1. ANTLR 4 -> Tool  
+1. Project -> Properties
+2. ANTLR 4 -> Tool  
 2. Enable project specific settings  
 3. Add->libs/antlr-4.5.3-complete.jar  
 4. Ensure that your added jar is checkmarked  
 5. Apply  
+
+## ANTLR generate visitor base classes
+This project uses visitors  
+1. Project -> Properties  
+2. ANTLR 4 -> Tool  
+3. Enable project specific settings  
+5. Ensure generate parse tree visitors are checkmarked  
+6. Apply 
