@@ -184,18 +184,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		String filename = ctx.String().getText();
 		filename = filename.substring(1, filename.length()-1); // strip leading and trailing \"
 		XqueryNodes root = new XqueryNodes(Doc(filename));
-		rpContext.push(root);
-		
-		System.out.println("-------------------------");
-		System.out.println("ROOT");
-		for (int i = 0; i < root.size(); i++) {
-			Node child = root.get(i);
-			System.out.println("Node name: " + child.getNodeName());
-			System.out.println("Node value: " + child.getNodeValue());
-			System.out.println("Node type: " + child.getNodeType());
-		}
-		System.out.println("-------------------------");
-		System.out.println("AFTER RP");
+		rpContext.push(root.getChildren());
 		XqueryNodes returnVal = (XqueryNodes) visit(ctx.rp());
 		for (int i = 0; i < returnVal.size(); i++) {
 			Node child = returnVal.get(i);
@@ -203,20 +192,30 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 			System.out.println("Node value: " + child.getNodeValue());
 			System.out.println("Node type: " + child.getNodeType());
 		}
-		
 		rpContext.pop();
 		return returnVal;
 	}
-//	@Override public ArrayList<Node> visitAPBoth(XqueryParser.APBothContext ctx)
-//	{
-//		//visit doc
-//		return null;
-//	}
+	@Override public XqueryNodes visitAPBoth(XqueryParser.APBothContext ctx)
+	{
+		String filename = ctx.String().getText();
+		filename = filename.substring(1, filename.length()-1); // strip leading and trailing \"
+		XqueryNodes root = new XqueryNodes(Doc(filename));
+		rpContext.push(root.getDescendants());
+		XqueryNodes returnVal = (XqueryNodes) visit(ctx.rp());
+		for (int i = 0; i < returnVal.size(); i++) {
+			Node child = returnVal.get(i);
+			System.out.println("Node name: " + child.getNodeName());
+			System.out.println("Node value: " + child.getNodeValue());
+			System.out.println("Node type: " + child.getNodeType());
+		}
+		rpContext.pop();
+		return returnVal;
+	}
 	@Override public XqueryNodes visitRPName(XqueryParser.RPNameContext ctx) 
 	{ 
 		String tagName = ctx.getText();
 		XqueryNodes cur = rpContext.peek();
-		XqueryNodes returnVal = cur.getChildren(tagName);
+		XqueryNodes returnVal = cur.getNodes(tagName);
 		return returnVal;
 	}
 	
@@ -253,23 +252,21 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	@Override public XqueryNodes visitRPChildren(XqueryParser.RPChildrenContext ctx) 
 	{
 		XqueryNodes x = (XqueryNodes) visit(ctx.rp(0));
-		rpContext.push(x);
+		rpContext.push(x.getChildren());
 		XqueryNodes y = (XqueryNodes) visit(ctx.rp(1));
 		rpContext.pop();
 		return y.unique();
 	}
-//	public ArrayList<Node> getChildren(Node x)
-//	{
-//		ArrayList<Node> r=new ArrayList<Node>();
-//		for(int i=0;i<x.getChildNodes().getLength();i++)
-//			r.add(x.getChildNodes().item(i));
-//		return r;
-//	}
-//	@Override public ArrayList<Node> visitRPBoth(XqueryParser.RPBothContext ctx)
-//	{
-//		return null;
-//	}
-//	
+
+	@Override public XqueryNodes visitRPBoth(XqueryParser.RPBothContext ctx)
+	{
+		XqueryNodes x = (XqueryNodes) visit(ctx.rp(0));
+		rpContext.push(x.getDescendants());
+		XqueryNodes y = (XqueryNodes) visit(ctx.rp(1));
+		rpContext.pop();
+		return y.unique();
+	}
+	
 //	@Override public ArrayList<Node> visitRPAll(XqueryParser.RPAllContext ctx)
 //	{
 //		ArrayList<Node> r=new ArrayList<Node>();
