@@ -17,6 +17,11 @@ public class XqueryNodes implements IXqueryValue {
 	public XqueryNodes() {
 		nodes = new ArrayList<Node>();
 	}
+
+	public XqueryNodes(Node n) {
+		nodes = new ArrayList<Node>();
+		nodes.add(n);
+	}
 	
 	public XqueryNodes(ArrayList<Node> val) {
 		nodes = val;
@@ -33,12 +38,38 @@ public class XqueryNodes implements IXqueryValue {
 			return null;
 	}
 	
+	public boolean add(Node n) {
+		return nodes.add(n);
+	}
+	
 	public XqueryNodes unique() { 
 		ArrayList<Node> uniques = new ArrayList<Node>();
 		Set<Node> uniqueSet = new HashSet<Node>(nodes);
 		for (Node n : uniqueSet) 
 			uniques.add(n);
 		return new XqueryNodes(uniques);
+	}
+	
+	public boolean isEqualValue(XqueryNodes other) {
+		for (int i = 0; i < nodes.size(); i++) {
+			for (int j = 0; j < other.size(); j++) {
+				if (nodes.get(i).isEqualNode(other.get(j))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public boolean isEqualId(XqueryNodes other) {
+		for (int i = 0; i < nodes.size(); i++) {
+			for (int j = 0; j < other.size(); j++) {
+				if (nodes.get(i).isSameNode(other.get(j))) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	
 	public XqueryNodes getNodes(String tagName) {
