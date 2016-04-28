@@ -15,57 +15,57 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	Stack<XqueryNodes> rpContext = new Stack<XqueryNodes>();
 
 	@Override 
-	public XqueryFilter visitFilterAnd(XqueryParser.FilterAndContext ctx)
+	public XqueryBoolean visitFilterAnd(XqueryParser.FilterAndContext ctx)
 	{
-		XqueryFilter left = (XqueryFilter) visit(ctx.f(0));
-		XqueryFilter right = (XqueryFilter) visit(ctx.f(1));
+		XqueryBoolean left = (XqueryBoolean) visit(ctx.f(0));
+		XqueryBoolean right = (XqueryBoolean) visit(ctx.f(1));
 		return left.and(right);
 	}
 	@Override
-	public XqueryFilter visitFilterOr(XqueryParser.FilterOrContext ctx)
+	public XqueryBoolean visitFilterOr(XqueryParser.FilterOrContext ctx)
 	{
-		XqueryFilter left = (XqueryFilter) visit(ctx.f(0));
-		XqueryFilter right = (XqueryFilter) visit(ctx.f(1));
+		XqueryBoolean left = (XqueryBoolean) visit(ctx.f(0));
+		XqueryBoolean right = (XqueryBoolean) visit(ctx.f(1));
 		return left.or(right);
 	}
 	@Override 
-	public XqueryFilter visitFilterIs(XqueryParser.FilterIsContext ctx)
+	public XqueryBoolean visitFilterIs(XqueryParser.FilterIsContext ctx)
 	{
 		rpContext.push(rpContext.peek().getChildren());
 		XqueryNodes left = (XqueryNodes) visit(ctx.rp(0));
 		XqueryNodes right = (XqueryNodes) visit(ctx.rp(1));
 		rpContext.pop();
-		return new XqueryFilter(left.isEqualId(right));
+		return new XqueryBoolean(left.isEqualId(right));
 	}
 	@Override 
-	public XqueryFilter visitFilterEqual(XqueryParser.FilterEqualContext ctx)
+	public XqueryBoolean visitFilterEqual(XqueryParser.FilterEqualContext ctx)
 	{
 		rpContext.push(rpContext.peek().getChildren());
 		XqueryNodes left = (XqueryNodes) visit(ctx.rp(0));
 		XqueryNodes right = (XqueryNodes) visit(ctx.rp(1));
 		rpContext.pop();
-		return new XqueryFilter(left.isEqualValue(right));
+		return new XqueryBoolean(left.isEqualValue(right));
 	}
 	@Override 
-	public XqueryFilter visitFilterNot(XqueryParser.FilterNotContext ctx)
+	public XqueryBoolean visitFilterNot(XqueryParser.FilterNotContext ctx)
 	{
-		XqueryFilter op = (XqueryFilter) visit(ctx.f());
+		XqueryBoolean op = (XqueryBoolean) visit(ctx.f());
 		return op.not();
 	}
 	@Override 
-	public XqueryFilter visitFilterParan(XqueryParser.FilterParanContext ctx)
+	public XqueryBoolean visitFilterParan(XqueryParser.FilterParanContext ctx)
 	{
-		return (XqueryFilter) visit(ctx.f());
+		return (XqueryBoolean) visit(ctx.f());
 	}
 	@Override 
-	public XqueryFilter visitFilter(XqueryParser.FilterContext ctx)
+	public XqueryBoolean visitFilter(XqueryParser.FilterContext ctx)
 	{
 		rpContext.push(rpContext.peek().getChildren());
 		XqueryNodes x = (XqueryNodes) visit(ctx.rp());
 		rpContext.pop();
 		if (x.size() > 0)
-			return new XqueryFilter(true);
-		return new XqueryFilter(false);
+			return new XqueryBoolean(true);
+		return new XqueryBoolean(false);
 	}
 //	@Override 
 //	public ArrayList<Node> visitConditionEqual(XqueryParser.ConditionEqualContext ctx)
@@ -245,7 +245,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		for (int i = 0; i < x.size(); i++) {
 			Node singleNode = x.get(i);
 			rpContext.push(new XqueryNodes(singleNode));
-			XqueryFilter filter = (XqueryFilter) visit(ctx.f());
+			XqueryBoolean filter = (XqueryBoolean) visit(ctx.f());
 			if(filter.getValue() == true)
 				returnVal.add(singleNode);
 			rpContext.pop();
