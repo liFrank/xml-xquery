@@ -15,7 +15,7 @@ public class Main {
 	        CommonTokenStream tokens = new CommonTokenStream(lexer);
 	
 	        XqueryParser parser = new XqueryParser(tokens);
-	        ParseTree tree = parser.xp(); // begin parsing at rule 'xq'
+	        ParseTree tree = parser.xq(); // begin parsing at rule 'xq'
 	        System.out.println("Visitor:");
 	        EvalVisitor evalByVisitor = new EvalVisitor();
 	        evalByVisitor.visit(tree);
