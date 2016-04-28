@@ -124,5 +124,50 @@ public class XqueryNodes implements IXqueryValue {
 		}
 		return new XqueryNodes(attribute);
 	}
-
+	
+	public String getNodeString(Node node) {
+	    try {
+	        StringWriter writer = new StringWriter();
+	        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+	        transformer.transform(new DOMSource(node), new StreamResult(writer));
+	        String output = writer.toString();
+	        return output.substring(output.indexOf("?>") + 2);//remove <?xml version="1.0" encoding="UTF-8"?>
+	    } catch (TransformerException e) {
+	        e.printStackTrace();
+	    }
+	    return node.getTextContent();
+	}
+	
+	public void printNodes() {
+		for (int i = 0; i < nodes.size(); i++) {
+			printNode(nodes.get(i));
+		}
+	}
+	
+	private void printNode(Node rootNode) {
+	    System.out.print(rootNode.getNodeName());
+	    if (rootNode.getNodeType() == Node.ELEMENT_NODE) {
+	    	System.out.print(", Node Type: " + "ELEMENT_NODE");
+	    	String textContent = "";
+	    	NodeList children = rootNode.getChildNodes();
+	    	for (int i = 0; i < children.getLength(); i++) {
+				Node child = children.item(i);
+				if (child.getNodeType() == Node.TEXT_NODE) {
+					textContent = child.getTextContent();
+				}
+	    	}
+	    	System.out.println(" -> " + textContent);
+	    }
+	    else if (rootNode.getNodeType() == Node.TEXT_NODE) {
+	    	System.out.print(", Node Type: " + "TEXT_NODE");
+	    	String textContent = rootNode.getTextContent();
+	    	System.out.println(" -> " + textContent);
+	    }
+	    else if (rootNode.getNodeType() == Node.ATTRIBUTE_NODE) {
+	    	System.out.println(", Node Type: " + "ATTRIBUTE_NODE");
+	    }
+	    else {
+	    	System.out.println(", Node Type: " + rootNode.getNodeType());
+	    }
+	}
 }

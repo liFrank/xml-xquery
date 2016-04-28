@@ -186,13 +186,8 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		XqueryNodes root = new XqueryNodes(Doc(filename));
 		rpContext.push(root.getChildren());
 		XqueryNodes returnVal = (XqueryNodes) visit(ctx.rp());
-		for (int i = 0; i < returnVal.size(); i++) {
-			Node child = returnVal.get(i);
-			System.out.println("Node name: " + child.getNodeName());
-			System.out.println("Node value: " + child.getNodeValue());
-			System.out.println("Node type: " + child.getNodeType());
-		}
 		rpContext.pop();
+		returnVal.printNodes();
 		return returnVal;
 	}
 	@Override public XqueryNodes visitAPBoth(XqueryParser.APBothContext ctx)
@@ -202,13 +197,8 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		XqueryNodes root = new XqueryNodes(Doc(filename));
 		rpContext.push(root.getDescendants());
 		XqueryNodes returnVal = (XqueryNodes) visit(ctx.rp());
-		for (int i = 0; i < returnVal.size(); i++) {
-			Node child = returnVal.get(i);
-			System.out.println("Node name: " + child.getNodeName());
-			System.out.println("Node value: " + child.getNodeValue());
-			System.out.println("Node type: " + child.getNodeType());
-		}
 		rpContext.pop();
+		returnVal.printNodes();
 		return returnVal;
 	}
 	@Override public XqueryNodes visitRPName(XqueryParser.RPNameContext ctx) 
