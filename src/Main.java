@@ -7,7 +7,6 @@ public class Main {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-//		ANTLRInputStream input = new ANTLRInputStream( "" );
 		try {
 			ANTLRFileStream input = new ANTLRFileStream("testcase/xqueries/simple.txt");
 	        XqueryLexer lexer = new XqueryLexer(input);
