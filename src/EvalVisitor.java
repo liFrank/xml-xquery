@@ -272,4 +272,63 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 //		}
 //		return cur;
 //	}
+		//by Jialong
+		//???
+		@Override public XqueryNodes visitRPAll(XqueryParser.RPAllContext ctx) 
+		{
+			XqueryNodes current=rpContext.peek();
+			XqueryNodes r= new XqueryNodes();
+			
+			for(int i=0;i<current.size();i++)
+			{
+				Node singleNode=current.get(i);
+				XqueryNodes xn= new XqueryNodes(singleNode);
+				r.addAll(xn.getChildren());
+			}
+			return r;
+		}
+		
+		//by Jialong
+		//??
+		@Override public XqueryNodes visitRPParents(XqueryParser.RPParentsContext ctx)
+		{
+			XqueryNodes currentChildren=rpContext.peek();
+			XqueryNodes parents=currentChildren.getParents().getParents();
+			return parents;
+			
+		}
+		
+		//by Jialong
+		//???
+		@Override public XqueryNodes visitRPCurrent(XqueryParser.RPCurrentContext ctx)
+		{
+			XqueryNodes current=rpContext.peek();
+			return current;
+		}
+		//by Jialong
+		//add @? or not?
+		@Override public XqueryNodes visitRPAttribute(XqueryParser.RPAttributeContext ctx)
+		{
+			XqueryNodes current=rpContext.peek();
+			return current.getAttributeNodes(ctx.Name().getText());
+		}
+		//by Jialong
+		@Override public XqueryNodes visitRPParanth(XqueryParser.RPParanthContext ctx) 
+		{
+			return (XqueryNodes) (visit(ctx.rp()));
+		}
+		//by Jialong
+		@Override public XqueryNodes visitRPWithRP(XqueryParser.RPWithRPContext ctx)
+		{
+			XqueryNodes left=(XqueryNodes) visit(ctx.rp(0));
+			XqueryNodes right=(XqueryNodes) visit(ctx.rp(1));
+			left.addAll(right);
+			return left;
+		}
+		//by Jialong
+		@Override public XqueryNodes visitRPText(XqueryParser.RPTextContext ctx)
+		{
+			XqueryNodes current=rpContext.peek();
+			return current.getTextNodes();
+		}
 }

@@ -41,6 +41,17 @@ public class XqueryNodes implements IXqueryValue {
 	public boolean add(Node n) {
 		return nodes.add(n);
 	}
+	//by Jialong
+	public ArrayList<Node> getInner()
+	{
+		ArrayList<Node> r= nodes;
+		return r;
+	}
+	//by Jialong
+	public boolean addAll(XqueryNodes x)
+	{
+		return nodes.addAll(x.getInner());
+	}
 	
 	public XqueryNodes unique() { 
 		ArrayList<Node> uniques = new ArrayList<Node>();
