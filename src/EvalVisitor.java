@@ -177,7 +177,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	}
 	@Override public XqueryNodes visitRPName(XqueryParser.RPNameContext ctx) 
 	{ 
-		String tagName = ctx.getText();
+		String tagName = ctx.getText();//I think here should be ctx.Name.getText();----Jia
 		XqueryNodes cur = rpContext.peek();
 		XqueryNodes returnVal = cur.getNodes(tagName);
 		return returnVal;
@@ -276,7 +276,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		//???
 		@Override public XqueryNodes visitRPAll(XqueryParser.RPAllContext ctx) 
 		{
-			XqueryNodes current=rpContext.peek();
+			/*XqueryNodes current=rpContext.peek();
 			XqueryNodes r= new XqueryNodes();
 			
 			for(int i=0;i<current.size();i++)
@@ -285,15 +285,17 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 				XqueryNodes xn= new XqueryNodes(singleNode);
 				r.addAll(xn.getChildren());
 			}
-			return r;
+			return r;*/
+			XqueryNodes current=rpContext.peek();
+			return current;
 		}
 		
 		//by Jialong
 		//??
 		@Override public XqueryNodes visitRPParents(XqueryParser.RPParentsContext ctx)
 		{
-			XqueryNodes currentChildren=rpContext.peek();
-			XqueryNodes parents=currentChildren.getParents().getParents();
+			XqueryNodes current=rpContext.peek();
+			XqueryNodes parents=current.getParents().getParents();
 			return parents;
 			
 		}
@@ -302,7 +304,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		//???
 		@Override public XqueryNodes visitRPCurrent(XqueryParser.RPCurrentContext ctx)
 		{
-			XqueryNodes current=rpContext.peek();
+			XqueryNodes current=rpContext.peek().getParents();
 			return current;
 		}
 		//by Jialong
