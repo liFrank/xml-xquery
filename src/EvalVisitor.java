@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Stack;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -12,7 +13,107 @@ import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
-	Stack<XqueryNodes> rpContext = new Stack<XqueryNodes>();
+	private Stack<XqueryNodes> rpContext;
+	private HashMap<String, XqueryNodes> xqContext;
+	private Stack<HashMap<String, XqueryNodes>> scope;
+	
+	public EvalVisitor() {
+		super(); // may be unnecessary
+		rpContext = new Stack<XqueryNodes>();
+		xqContext = new HashMap<String, XqueryNodes>();
+		scope = new Stack<HashMap<String, XqueryNodes>>();
+	}
+	
+	@Override public XqueryNodes visitXQVar(XqueryParser.XQVarContext ctx) 
+	{ 
+		return (XqueryNodes) xqContext.get(ctx.Var().getText()); // can return null if not found
+	}
+//
+//	@Override public XqueryNodes visitXQString(XqueryParser.XQStringContext ctx) { return visitChildren(ctx); }
+//
+	@Override public XqueryNodes visitXQAp(XqueryParser.XQApContext ctx) 
+	{ 
+		return (XqueryNodes) visit(ctx.ap()); 
+	}
+
+	@Override public XqueryNodes visitXQChildren(XqueryParser.XQChildrenContext ctx) 
+	{ 
+		XqueryNodes x = (XqueryNodes) visit(ctx.xq());
+		rpContext.push(x.getChildren());
+		XqueryNodes y = (XqueryNodes) visit(ctx.rp());
+		rpContext.pop();
+		return y.unique();
+	}
+
+	@Override public XqueryNodes visitXQBoth(XqueryParser.XQBothContext ctx) 
+	{ 
+		XqueryNodes x = (XqueryNodes) visit(ctx.xq());
+		rpContext.push(x.getDescendants());
+		XqueryNodes y = (XqueryNodes) visit(ctx.rp());
+		rpContext.pop();
+		return y.unique(); 
+	}
+
+	@Override public XqueryNodes visitXQParanth(XqueryParser.XQParanthContext ctx) 
+	{ 
+		return (XqueryNodes) visit(ctx.xq()); 
+	}
+
+//	@Override public XqueryNodes visitXQWithXQ(XqueryParser.XQWithXQContext ctx) { return visitChildren(ctx); }
+
+	@Override public XqueryNodes visitXQLet(XqueryParser.XQLetContext ctx) { 
+		visit(ctx.letClause());
+		return null;
+	}
+
+	@Override public XqueryNodes visitXQFor(XqueryParser.XQForContext ctx) 
+	{ 
+		xqContext.clear(); //TEMPORARY...we should create a new scope here
+		visit(ctx.forClause());
+		if (ctx.letClause() != null) { 
+			visit(ctx.letClause());
+		}
+		if (ctx.whereClause() != null) {
+			visit(ctx.whereClause());
+		}
+		XqueryNodes result = (XqueryNodes) visit(ctx.returnClause());
+		if (result == null)
+			return new XqueryNodes(); // return an empty list
+		return result;
+	}
+//
+//	@Override public XqueryNodes visitXQTag(XqueryParser.XQTagContext ctx) { return visitChildren(ctx); }
+
+	@Override public XqueryNodes visitForClause(XqueryParser.ForClauseContext ctx) 
+	{ 
+		for (int i = 0; i < ctx.Var().size(); i++) {
+			String var = ctx.Var(i).getText();
+			XqueryNodes val = (XqueryNodes) visit(ctx.xq(i));
+			xqContext.put(var, val);
+		}
+		return null;
+	}
+
+	@Override public XqueryBoolean visitLetClause(XqueryParser.LetClauseContext ctx) 
+	{ 
+		// modify current context scope
+		for (int i = 0; i < ctx.Var().size(); i++) {
+			String var = ctx.Var(i).getText();
+			XqueryNodes val = (XqueryNodes) visit(ctx.xq(i));
+			xqContext.put(var, val);
+		}
+		return null;
+	}
+
+	@Override public XqueryNodes visitWhereClause(XqueryParser.WhereClauseContext ctx) 
+	{ 
+		visit(ctx.cond());
+		return null; 
+	}
+
+	@Override public XqueryNodes visitReturnClause(XqueryParser.ReturnClauseContext ctx) { 
+		return (XqueryNodes) visit(ctx.xq()); 
+	}
 
 	@Override 
 	public XqueryBoolean visitFilterAnd(XqueryParser.FilterAndContext ctx)
