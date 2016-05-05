@@ -78,7 +78,7 @@ Name 		: ( 'a' .. 'z' | 'A' .. 'Z' | '_' )( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9'
 Var			: '$' Name;
 
 // fileName, StringConstant
-String	: '"' ~('\n'|'\r')* '"';
+String	: '"' ~('\n'|'\r'|'"')* '"';
 
 // Ignore
 //Comment 	:  '//' ~('\n')* '\n' -> skip;
