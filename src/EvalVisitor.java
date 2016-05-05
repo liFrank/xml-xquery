@@ -292,6 +292,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		
 		//by Jialong
 		//??
+		//about the empty parent.
 		@Override public XqueryNodes visitRPParents(XqueryParser.RPParentsContext ctx)
 		{
 			XqueryNodes current=rpContext.peek();
