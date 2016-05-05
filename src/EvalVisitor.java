@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Stack;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -13,7 +14,9 @@ import org.xml.sax.SAXException;
 
 public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	Stack<XqueryNodes> rpContext = new Stack<XqueryNodes>();
-
+	HashMap<String,XqueryNodes> qyContext=new HashMap<String,XqueryNodes>();
+	Stack<HashMap<String,XqueryNodes>> scpContext=new Stack<HashMap<String,XqueryNodes>>();
+	
 	@Override 
 	public XqueryBoolean visitFilterAnd(XqueryParser.FilterAndContext ctx)
 	{
