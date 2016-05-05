@@ -10,16 +10,16 @@ xp  : ap
 	;    
 
 // Xquery sub-language for the project, entry point
-xq	: Var
-	| String
-	| ap
-	| '(' xq ')'
-	| xq ',' xq
-	| xq '/' rp
-	| xq '//' rp
-	| '<' Name '>' '{' xq '}' '</' Name '>'
-	| forClause (letClause | /*epsilon*/) (whereClause | /*epsilon*/) returnClause
-	| letClause xq
+xq	: Var				#XQVariable
+	| String			#XQString
+	| ap				#XQAP
+	| '(' xq ')'		#XQParanth													
+	| xq ',' xq			#XQWithXQ
+	| xq '/' rp			#XQRPChildren
+	| xq '//' rp		#XQRPBoth
+	| '<' Name '>' '{' xq '}' '</' Name '>'	#XQElement
+	| forClause (letClause | /*epsilon*/) (whereClause | /*epsilon*/) returnClause	#XQCore
+	| letClause xq		#XQLet
 	;
 		
 // absolute path 
