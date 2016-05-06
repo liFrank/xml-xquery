@@ -360,7 +360,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 				//for var1 in Xq1, var2 in Xq2.......
 				for(int i=0;i<varcontent.size();i++)
 				{
-					qyContext.remove(variable);//not sure if here is correct....
+					qyContext.remove(variable);
 					XqueryNodes singlenode= new XqueryNodes(varcontent.get(i));
 					qyContext.put(variable, singlenode);
 					DFS_query(pos+1,len,ctx,result);//dfs, to the next variable.
@@ -375,7 +375,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 			HashMap<String,XqueryNodes> oldScope=new HashMap<String,XqueryNodes>(qyContext);
 			scpContext.push(oldScope);
 			DFS_query(0,ctx.forClause().Var().size(),ctx,result);
-			scpContext.pop();
+			qyContext=scpContext.pop();
 			return result;
 		}
 }
