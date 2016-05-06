@@ -21,4 +21,15 @@ public class XqueryBoolean implements IXqueryValue {
 	public boolean getValue() {
 		return value;
 	}
+	
+	//by jialong
+	public boolean equals(XqueryBoolean v)
+	{
+		return value==v.getValue();
+	}
+	//by jialong ---is this a legal overloading?
+	public boolean equals(boolean v)
+	{
+		return value==v;
+	}
 }

@@ -8,9 +8,11 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.antlr.v4.runtime.misc.NotNull;
 import org.omg.CORBA.CTX_RESTRICT_SCOPE;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
+
 
 public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	Stack<XqueryNodes> rpContext = new Stack<XqueryNodes>();
@@ -336,5 +338,44 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		{
 			XqueryNodes current=rpContext.peek();
 			return current.getTextNodes();
+		}
+		//by Jialong
+		private void DFS_query(int pos,int len,XqueryParser.XQCoreContext ctx, XqueryNodes result)
+		{
+			if(pos==len)//means the pos has reached the end of 'for' and began do with the other.
+			{
+				if(ctx.letClause() != null)//has a let clause
+					visit(ctx.letClause());//visit the let clause
+				if(ctx.whereClause() != null)//has a where clause
+				{
+					if(visit(ctx.whereClause()).equals(false))//if where clause returns false
+						return;//add nothing to the result.
+				}
+				result.addAll((XqueryNodes)visit(ctx.returnClause()));//or add to result
+			}
+			else
+			{
+				String variable=ctx.forClause().Var(pos).getText();
+				XqueryNodes varcontent=(XqueryNodes) visit(ctx.forClause().xq(pos));
+				//for var1 in Xq1, var2 in Xq2.......
+				for(int i=0;i<varcontent.size();i++)
+				{
+					qyContext.remove(variable);//not sure if here is correct....
+					XqueryNodes singlenode= new XqueryNodes(varcontent.get(i));
+					qyContext.put(variable, singlenode);
+					DFS_query(pos+1,len,ctx,result);//dfs, to the next variable.
+				}
+			}
+		}
+		//by Jialong
+		//??
+		@Override public XqueryNodes visitXQCore(@NotNull XqueryParser.XQCoreContext ctx)
+		{
+			XqueryNodes result=new XqueryNodes();
+			HashMap<String,XqueryNodes> oldScope=new HashMap<String,XqueryNodes>(qyContext);
+			scpContext.push(oldScope);
+			DFS_query(0,ctx.forClause().Var().size(),ctx,result);
+			scpContext.pop();
+			return result;
 		}
 }
