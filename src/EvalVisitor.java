@@ -13,14 +13,23 @@ import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
+	private Document document;
 	private Stack<XqueryNodes> rpContext;
-//	private HashMap<String, XqueryNodes> xqContext;
 	private Stack<HashMap<String, XqueryNodes>> scopeContext;
 	
 	public EvalVisitor() {
 		super(); // may be unnecessary
+		DocumentBuilderFactory factory = null;
+		DocumentBuilder builder = null; 
+		try {
+			factory = DocumentBuilderFactory.newInstance();
+			builder = factory.newDocumentBuilder();
+		} 
+		catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		}
+		document = builder.newDocument();
 		rpContext = new Stack<XqueryNodes>();
-//		xqContext = new HashMap<String, XqueryNodes>();
 		scopeContext = new Stack<HashMap<String, XqueryNodes>>();
 		scopeContext.push(new HashMap<String, XqueryNodes>());
 	}
@@ -65,9 +74,14 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 			ret = new XqueryNodes(); // return empty
 		return ret;
 	}
-//
-//	@Override public XqueryNodes visitXQString(XqueryParser.XQStringContext ctx) { return visitChildren(ctx); }
-//
+
+	@Override public XqueryNodes visitXQString(XqueryParser.XQStringContext ctx) 
+	{ 
+		String string = ctx.String().getText();
+		Node textNode = document.createTextNode(string);
+		return new XqueryNodes(textNode);
+	}
+
 	@Override public XqueryNodes visitXQAp(XqueryParser.XQApContext ctx) 
 	{ 
 		return (XqueryNodes) visit(ctx.ap()); 
@@ -124,14 +138,22 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		return result.unique(); // remove duplicates
 	}
 //
-//	@Override public XqueryNodes visitXQTag(XqueryParser.XQTagContext ctx) { return visitChildren(ctx); }
+	@Override public XqueryNodes visitXQTag(XqueryParser.XQTagContext ctx) 
+	{ 
+		String tagName = ctx.Name(0).getText();
+		Node outer = document.createElement(tagName);
+		XqueryNodes inner = (XqueryNodes) visit(ctx.xq());
+		for (int i = 0; i < inner.size(); i++) {
+			outer.appendChild(inner.get(i));
+		}
+		return new XqueryNodes(outer);
+	}
 
 	@Override public XqueryBoolean visitForClause(XqueryParser.ForClauseContext ctx) 
 	{ 
 		for (int i = 0; i < ctx.Var().size(); i++) {
 			String var = ctx.Var(i).getText();
 			XqueryNodes val = (XqueryNodes) visit(ctx.xq(i));
-//			xqContext.put(var, val);
 			scopeContext.peek().put(var, val);
 		}
 		return new XqueryBoolean(true); // unused return value
@@ -143,7 +165,6 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		for (int i = 0; i < ctx.Var().size(); i++) {
 			String var = ctx.Var(i).getText();
 			XqueryNodes val = (XqueryNodes) visit(ctx.xq(i));
-//			xqContext.put(var, val);
 			scopeContext.peek().put(var, val);
 		}
 		return new XqueryBoolean(true); // unused return value
