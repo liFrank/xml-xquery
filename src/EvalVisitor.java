@@ -96,7 +96,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		rpContext.push(x.getChildren());
 		XqueryNodes y = (XqueryNodes) visit(ctx.rp());
 		rpContext.pop();
-		return y.unique();
+		return y.uniqueById();
 	}
 
 	@Override public XqueryNodes visitXQBoth(XqueryParser.XQBothContext ctx) 
@@ -105,7 +105,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		rpContext.push(x.getDescendants());
 		XqueryNodes y = (XqueryNodes) visit(ctx.rp());
 		rpContext.pop();
-		return y.unique(); 
+		return y.uniqueById(); 
 	}
 
 	@Override public XqueryNodes visitXQParanth(XqueryParser.XQParanthContext ctx) 
@@ -149,9 +149,8 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 			result = (XqueryNodes) visit(ctx.returnClause());
 		}
 		scopeContext.pop();
-		result = result.unique();
 		result.printNodes();
-		return result.unique(); // remove duplicates
+		return result;
 	}
 //
 	@Override public XqueryNodes visitXQTag(XqueryParser.XQTagContext ctx) 
