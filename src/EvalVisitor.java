@@ -45,10 +45,12 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	
 	// Evaluate where clause using every combination of ind. elements in variables from the context. 
 	// In base case, evaluate where and return clauses using recursively generated combinations
-	public void whereReturn(XqueryParser.XQForContext ctx, int keyIndex, ArrayList<String> keys, 
-			LinkedHashMap<String, XqueryNodes> evalContext, XqueryNodes returnVal) {
+	public void whereReturn(XqueryParser.XQForContext ctx, int keyIndex, XqueryNodes returnVal) {
 		// base case
-		if (keyIndex >= keys.size()) {
+		int numVariables = ctx.forClause().Var().size();
+		if (ctx.letClause() != null)
+			numVariables = numVariables + ctx.letClause().Var().size();
+		if (keyIndex >= numVariables) {
 			XqueryBoolean condition = (XqueryBoolean) visit(ctx.whereClause());
 			if (condition.getValue() == true) {
 				XqueryNodes ret = (XqueryNodes) visit(ctx.returnClause());
@@ -58,13 +60,22 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		}
 		else {
 			LinkedHashMap<String, XqueryNodes> currentContext = scopeContext.peek();
-			String currentKey = keys.get(keyIndex);
-			XqueryNodes currentNodes = (XqueryNodes) visit(ctx.forClause().xq(keyIndex));
+			String currentKey = null;
+			XqueryNodes currentNodes = null;
+			if (keyIndex < ctx.forClause().Var().size()) { // handle vars in forClause
+				currentKey = ctx.forClause().Var(keyIndex).getText();
+				currentNodes = (XqueryNodes) visit(ctx.forClause().xq(keyIndex));
+			}
+			else { // handle vars in letClause, should not be able to enter if there is no letClause
+				int offsetKeyIndex = keyIndex - ctx.forClause().Var().size();
+				currentKey = ctx.letClause().Var(offsetKeyIndex).getText();
+				currentNodes = (XqueryNodes) visit(ctx.letClause().xq(offsetKeyIndex));
+			}
 			for (int i = 0; i < currentNodes.size(); i++) {
 				Node singleNode = currentNodes.get(i);
 				XqueryNodes xn = new XqueryNodes(singleNode);
 				currentContext.put(currentKey, xn);
-				whereReturn(ctx, keyIndex + 1, keys, evalContext, returnVal); // recursive call
+				whereReturn(ctx, keyIndex + 1, returnVal); // recursive call
 			}
 		}
 	}
@@ -129,30 +140,21 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	{ 
 		LinkedHashMap<String, XqueryNodes> copy = deepCopy(scopeContext.peek());
 		scopeContext.push(copy);
-		visit(ctx.forClause());
-		if (ctx.letClause() != null) { 
-			visit(ctx.letClause());
-		}
 		XqueryNodes result = new XqueryNodes();
-//		for (String key : scopeContext.peek().keySet()) {
-//			System.out.println("Key: " + key);
-//			XqueryNodes xn = scopeContext.peek().get(key);
-//			xn.printNodes();
-//			System.out.println("---------------------------");
-//		}
-		if (ctx.whereClause() != null) {
-			ArrayList<String> keys = new ArrayList<String>(scopeContext.peek().keySet());
-			LinkedHashMap<String, XqueryNodes> evalContext = new LinkedHashMap<String, XqueryNodes>();
-			whereReturn(ctx, 0, keys, evalContext, result);
-		}
-		else {
+		if (ctx.whereClause() == null) { // Handle simple case w/o a whereClause
+			visit(ctx.forClause());
+			if (ctx.letClause() != null) { 
+				visit(ctx.letClause());
+			}
 			result = (XqueryNodes) visit(ctx.returnClause());
 		}
+		else { // Handle whereClause
+			whereReturn(ctx, 0, result);
+		}
 		scopeContext.pop();
-		result.printNodes();
 		return result;
 	}
-//
+
 	@Override public XqueryNodes visitXQTag(XqueryParser.XQTagContext ctx) 
 	{ 
 		String tagName = ctx.Name(0).getText();
