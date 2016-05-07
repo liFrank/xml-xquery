@@ -43,10 +43,32 @@ public class XqueryNodes implements IXqueryValue {
 	}
 	
 	public XqueryNodes unique() { 
+		return uniqueByValue();
+	}
+	
+	public XqueryNodes uniqueById() { 
 		ArrayList<Node> uniques = new ArrayList<Node>();
 		Set<Node> uniqueSet = new HashSet<Node>(nodes);
 		for (Node n : uniqueSet) 
 			uniques.add(n);
+		return new XqueryNodes(uniques);
+	}
+	
+	public XqueryNodes uniqueByValue() { 
+		ArrayList<Node> uniques = new ArrayList<Node>();
+		for (int i = 0; i < nodes.size(); i++) {
+			boolean add = true;
+			Node candidate = nodes.get(i);
+			for (int j = 0; j < nodes.size() && i != j; j++) {
+				Node other = nodes.get(j);
+				if (candidate.isEqualNode(other)) {
+					add = false;
+					break;
+				}
+			}
+			if (add) 
+				uniques.add(candidate);
+		}
 		return new XqueryNodes(uniques);
 	}
 	
@@ -172,6 +194,7 @@ public class XqueryNodes implements IXqueryValue {
 	public void printNodes() {
 		for (int i = 0; i < nodes.size(); i++) {
 			printNode(nodes.get(i));
+//			System.out.println(getNodeString(nodes.get(i)));
 		}
 	}
 	
@@ -187,7 +210,8 @@ public class XqueryNodes implements IXqueryValue {
 					textContent = child.getTextContent();
 				}
 	    	}
-	    	System.out.println(" -> " + textContent);
+	    	if (!textContent.isEmpty())
+	    		System.out.println(" -> " + textContent);
 	    }
 	    else if (rootNode.getNodeType() == Node.TEXT_NODE) {
 	    	System.out.print(", Node Type: " + "TEXT_NODE");
