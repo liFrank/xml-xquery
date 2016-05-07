@@ -42,6 +42,15 @@ public class XqueryNodes implements IXqueryValue {
 		return nodes.add(n);
 	}
 	
+	public XqueryNodes concat(XqueryNodes other) {
+		ArrayList<Node> combined = new ArrayList<Node>();
+		combined.addAll(this.nodes);
+		for (int i = 0; i < other.size(); i++) {
+			combined.add(other.get(i));
+		}
+		return new XqueryNodes(combined);
+	}
+	
 	public XqueryNodes unique() { 
 		return uniqueByValue();
 	}
@@ -193,8 +202,8 @@ public class XqueryNodes implements IXqueryValue {
 	
 	public void printNodes() {
 		for (int i = 0; i < nodes.size(); i++) {
-			printNode(nodes.get(i));
-//			System.out.println(getNodeString(nodes.get(i)));
+//			printNode(nodes.get(i));
+			System.out.println(getNodeString(nodes.get(i)));
 		}
 	}
 	
