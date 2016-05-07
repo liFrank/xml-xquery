@@ -14,19 +14,56 @@ import org.xml.sax.SAXException;
 
 public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	private Stack<XqueryNodes> rpContext;
-	private HashMap<String, XqueryNodes> xqContext;
-	private Stack<HashMap<String, XqueryNodes>> scope;
+//	private HashMap<String, XqueryNodes> xqContext;
+	private Stack<HashMap<String, XqueryNodes>> scopeContext;
 	
 	public EvalVisitor() {
 		super(); // may be unnecessary
 		rpContext = new Stack<XqueryNodes>();
-		xqContext = new HashMap<String, XqueryNodes>();
-		scope = new Stack<HashMap<String, XqueryNodes>>();
+//		xqContext = new HashMap<String, XqueryNodes>();
+		scopeContext = new Stack<HashMap<String, XqueryNodes>>();
+		scopeContext.push(new HashMap<String, XqueryNodes>());
+	}
+
+	public HashMap<String, XqueryNodes> deepCopy(HashMap<String, XqueryNodes> hashMap) {
+	    HashMap<String, XqueryNodes> copy = new HashMap<String, XqueryNodes>();
+	    for(String key : hashMap.keySet()){
+	        copy.put(key, hashMap.get(key));
+	    }
+	    return copy;
+	}
+	
+	// Evaluate where clause using every combination of ind. elements in variables from the context. 
+	// In base case, evaluate where and return clauses using recursively generated combinations
+	public void whereReturn(XqueryParser.XQForContext ctx, int keyIndex, ArrayList<String> keys, 
+			HashMap<String, XqueryNodes> evalContext, XqueryNodes returnVal) {
+		// base case
+		if (keyIndex >= keys.size()) {
+			scopeContext.push(evalContext); // push current combination as context to be evaluated
+			XqueryBoolean condition = (XqueryBoolean) visit(ctx.whereClause());
+			if (condition.getValue() == true) {
+				XqueryNodes ret = (XqueryNodes) visit(ctx.returnClause()); // should be of size 1.
+				returnVal.add(ret.get(0)); // add to final return
+			}
+			scopeContext.pop(); 
+		}
+		HashMap<String, XqueryNodes> currentContext = scopeContext.peek();
+		String currentKey = keys.get(keyIndex);
+		XqueryNodes currentNodes = currentContext.get(currentKey);
+		for (int i = 0; i < currentNodes.size(); i++) {
+			Node singleNode = currentNodes.get(i);
+			XqueryNodes xn = new XqueryNodes(singleNode);
+			evalContext.put(currentKey, xn);
+			whereReturn(ctx, keyIndex + 1, keys, evalContext, returnVal); // recursive call
+		}
 	}
 	
 	@Override public XqueryNodes visitXQVar(XqueryParser.XQVarContext ctx) 
 	{ 
-		return (XqueryNodes) xqContext.get(ctx.Var().getText()); // can return null if not found
+		XqueryNodes ret = (XqueryNodes) scopeContext.peek().get(ctx.Var().getText()); 
+		if (ret == null)// can return null if not found
+			ret = new XqueryNodes(); // return empty
+		return ret;
 	}
 //
 //	@Override public XqueryNodes visitXQString(XqueryParser.XQStringContext ctx) { return visitChildren(ctx); }
@@ -68,30 +105,36 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 
 	@Override public XqueryNodes visitXQFor(XqueryParser.XQForContext ctx) 
 	{ 
-		xqContext.clear(); //TEMPORARY...we should create a new scope here
+		HashMap<String, XqueryNodes> copy = deepCopy(scopeContext.peek());
+		scopeContext.push(copy);
 		visit(ctx.forClause());
 		if (ctx.letClause() != null) { 
 			visit(ctx.letClause());
 		}
+		XqueryNodes result = new XqueryNodes();
 		if (ctx.whereClause() != null) {
-			visit(ctx.whereClause());
+			ArrayList<String> keys = new ArrayList<String>(scopeContext.peek().keySet());
+			HashMap<String, XqueryNodes> evalContext = new HashMap<String, XqueryNodes>();
+			whereReturn(ctx, 0, keys, evalContext, result);
 		}
-		XqueryNodes result = (XqueryNodes) visit(ctx.returnClause());
-		if (result == null)
-			return new XqueryNodes(); // return an empty list
-		return result;
+		else {
+			result = (XqueryNodes) visit(ctx.returnClause());
+		}
+		scopeContext.pop();
+		return result.unique(); // remove duplicates
 	}
 //
 //	@Override public XqueryNodes visitXQTag(XqueryParser.XQTagContext ctx) { return visitChildren(ctx); }
 
-	@Override public XqueryNodes visitForClause(XqueryParser.ForClauseContext ctx) 
+	@Override public XqueryBoolean visitForClause(XqueryParser.ForClauseContext ctx) 
 	{ 
 		for (int i = 0; i < ctx.Var().size(); i++) {
 			String var = ctx.Var(i).getText();
 			XqueryNodes val = (XqueryNodes) visit(ctx.xq(i));
-			xqContext.put(var, val);
+//			xqContext.put(var, val);
+			scopeContext.peek().put(var, val);
 		}
-		return null;
+		return new XqueryBoolean(true); // unused return value
 	}
 
 	@Override public XqueryBoolean visitLetClause(XqueryParser.LetClauseContext ctx) 
@@ -100,15 +143,15 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		for (int i = 0; i < ctx.Var().size(); i++) {
 			String var = ctx.Var(i).getText();
 			XqueryNodes val = (XqueryNodes) visit(ctx.xq(i));
-			xqContext.put(var, val);
+//			xqContext.put(var, val);
+			scopeContext.peek().put(var, val);
 		}
-		return null;
+		return new XqueryBoolean(true); // unused return value
 	}
 
-	@Override public XqueryNodes visitWhereClause(XqueryParser.WhereClauseContext ctx) 
+	@Override public XqueryBoolean visitWhereClause(XqueryParser.WhereClauseContext ctx) 
 	{ 
-		visit(ctx.cond());
-		return null; 
+		return (XqueryBoolean) visit(ctx.cond());
 	}
 
 	@Override public XqueryNodes visitReturnClause(XqueryParser.ReturnClauseContext ctx) { 
@@ -162,67 +205,37 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 			return new XqueryBoolean(true);
 		return new XqueryBoolean(false);
 	}
-//	@Override 
-//	public ArrayList<Node> visitConditionEqual(XqueryParser.ConditionEqualContext ctx)
-//	{
-//		ArrayList<Node> tmp1=xqcur;
-//		ArrayList<Node> left=visit(ctx.xq(0));
-//		xqcur=tmp1;
-//		ArrayList<Node> tmp2=xqcur;
-//		ArrayList<Node> right=visit(ctx.xq(1));
-//		xqcur=tmp2;
-//		for(int i=0;i<left.size();i++)
-//			for(int j=0;j<right.size();j++)
-//				if(left.get(i).isEqualNode(right.get(j)))
-//				{
-//					return tmp2;
-//				}
-//		return new ArrayList<Node>(); 
-//	}
-//	@Override 
-//	public ArrayList<Node> visitConditionIs(XqueryParser.ConditionIsContext ctx)
-//	{
-//		ArrayList<Node> tmp1=xqcur;
-//		ArrayList<Node> left=visit(ctx.xq(0));
-//		xqcur=tmp1;
-//		ArrayList<Node> tmp2=xqcur;
-//		ArrayList<Node> right=visit(ctx.xq(1));
-//		xqcur=tmp2;
-//		for(int i=0;i<left.size();i++)
-//			for(int j=0;j<right.size();j++)
-//				if(left.get(i)==right.get(j))
-//				{
-//					return tmp2;
-//				}
-//		return new ArrayList<Node>(); 
-//	}
-//	@Override
-//	public ArrayList<Node> visitConditionParanth(XqueryParser.ConditionParanthContext ctx)
-//	{
-//		return visit(ctx.cond());
-//	}
-//	@Override public ArrayList<Node> visitConditionAnd(XqueryParser.ConditionAndContext ctx)
-//	{
-//		ArrayList<Node> left= visit(ctx.cond(0));
-//		ArrayList<Node> right = visit(ctx.cond(1));
-//		if (!left.isEmpty() && !right.isEmpty()){
-//				return left;
-//		}
-//		return new ArrayList<Node>();
-//	}
-//	@Override public ArrayList<Node> visitConditionOr(XqueryParser.ConditionOrContext ctx)
-//	{
-//		ArrayList<Node> left=visit(ctx.cond(0));
-//		if(!left.isEmpty())
-//		{
-//			return left;
-//		}
-//		ArrayList<Node> right = visit(ctx.cond(1));
-//		if ( !right.isEmpty()){
-//			return right;
-//		}
-//		return new ArrayList<Node>();
-//	}
+	@Override 
+	public XqueryBoolean visitConditionEqual(XqueryParser.ConditionEqualContext ctx)
+	{
+		XqueryNodes left = (XqueryNodes) visit(ctx.xq(0));
+		XqueryNodes right = (XqueryNodes) visit(ctx.xq(1));
+		return new XqueryBoolean(left.isEqualValue(right));
+	}
+	@Override 
+	public XqueryBoolean visitConditionIs(XqueryParser.ConditionIsContext ctx)
+	{
+		XqueryNodes left = (XqueryNodes) visit(ctx.xq(0));
+		XqueryNodes right = (XqueryNodes) visit(ctx.xq(1));
+		return new XqueryBoolean(left.isEqualId(right));
+	}
+	@Override
+	public XqueryBoolean visitConditionParanth(XqueryParser.ConditionParanthContext ctx)
+	{
+		return (XqueryBoolean) visit(ctx.cond());
+	}
+	@Override public XqueryBoolean visitConditionAnd(XqueryParser.ConditionAndContext ctx)
+	{
+		XqueryBoolean left = (XqueryBoolean) visit(ctx.cond(0));
+		XqueryBoolean right = (XqueryBoolean) visit(ctx.cond(1));
+		return left.and(right);
+	}
+	@Override public XqueryBoolean visitConditionOr(XqueryParser.ConditionOrContext ctx)
+	{
+		XqueryBoolean left = (XqueryBoolean) visit(ctx.cond(0));
+		XqueryBoolean right = (XqueryBoolean) visit(ctx.cond(1));
+		return left.or(right);
+	}
 	
 	public ArrayList<Node> Doc(String name)
 	{
