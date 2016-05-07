@@ -2,6 +2,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Stack;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -15,7 +16,7 @@ import org.xml.sax.SAXException;
 public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	private Document document;
 	private Stack<XqueryNodes> rpContext;
-	private Stack<HashMap<String, XqueryNodes>> scopeContext;
+	private Stack<LinkedHashMap<String, XqueryNodes>> scopeContext;
 	
 	public EvalVisitor() {
 		super(); // may be unnecessary
@@ -30,12 +31,12 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		}
 		document = builder.newDocument();
 		rpContext = new Stack<XqueryNodes>();
-		scopeContext = new Stack<HashMap<String, XqueryNodes>>();
-		scopeContext.push(new HashMap<String, XqueryNodes>());	
+		scopeContext = new Stack<LinkedHashMap<String, XqueryNodes>>();
+		scopeContext.push(new LinkedHashMap<String, XqueryNodes>());	
 	}
 
-	public HashMap<String, XqueryNodes> deepCopy(HashMap<String, XqueryNodes> hashMap) {
-	    HashMap<String, XqueryNodes> copy = new HashMap<String, XqueryNodes>();
+	public LinkedHashMap<String, XqueryNodes> deepCopy(LinkedHashMap<String, XqueryNodes> hashMap) {
+		LinkedHashMap<String, XqueryNodes> copy = new LinkedHashMap<String, XqueryNodes>();
 	    for(String key : hashMap.keySet()){
 	        copy.put(key, hashMap.get(key));
 	    }
@@ -45,25 +46,24 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	// Evaluate where clause using every combination of ind. elements in variables from the context. 
 	// In base case, evaluate where and return clauses using recursively generated combinations
 	public void whereReturn(XqueryParser.XQForContext ctx, int keyIndex, ArrayList<String> keys, 
-			HashMap<String, XqueryNodes> evalContext, XqueryNodes returnVal) {
+			LinkedHashMap<String, XqueryNodes> evalContext, XqueryNodes returnVal) {
 		// base case
 		if (keyIndex >= keys.size()) {
-			scopeContext.push(evalContext); // push current combination as context to be evaluated
 			XqueryBoolean condition = (XqueryBoolean) visit(ctx.whereClause());
 			if (condition.getValue() == true) {
-				XqueryNodes ret = (XqueryNodes) visit(ctx.returnClause()); // should be of size 1.
-				returnVal.add(ret.get(0)); // add to final return
+				XqueryNodes ret = (XqueryNodes) visit(ctx.returnClause());
+				for (int i = 0; i < ret.size(); i++) 
+					returnVal.add(ret.get(i)); // add to final return
 			}
-			scopeContext.pop(); 
 		}
 		else {
-			HashMap<String, XqueryNodes> currentContext = scopeContext.peek();
+			LinkedHashMap<String, XqueryNodes> currentContext = scopeContext.peek();
 			String currentKey = keys.get(keyIndex);
-			XqueryNodes currentNodes = currentContext.get(currentKey);
+			XqueryNodes currentNodes = (XqueryNodes) visit(ctx.forClause().xq(keyIndex));
 			for (int i = 0; i < currentNodes.size(); i++) {
 				Node singleNode = currentNodes.get(i);
 				XqueryNodes xn = new XqueryNodes(singleNode);
-				evalContext.put(currentKey, xn);
+				currentContext.put(currentKey, xn);
 				whereReturn(ctx, keyIndex + 1, keys, evalContext, returnVal); // recursive call
 			}
 		}
@@ -113,7 +113,12 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		return (XqueryNodes) visit(ctx.xq()); 
 	}
 
-//	@Override public XqueryNodes visitXQWithXQ(XqueryParser.XQWithXQContext ctx) { return visitChildren(ctx); }
+	@Override public XqueryNodes visitXQWithXQ(XqueryParser.XQWithXQContext ctx) 
+	{ 
+		XqueryNodes left = (XqueryNodes) visit(ctx.xq(0));
+		XqueryNodes right = (XqueryNodes) visit(ctx.xq(1));
+		return left.concat(right);
+	}
 
 	@Override public XqueryNodes visitXQLet(XqueryParser.XQLetContext ctx) { 
 		visit(ctx.letClause());
@@ -122,7 +127,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 
 	@Override public XqueryNodes visitXQFor(XqueryParser.XQForContext ctx) 
 	{ 
-		HashMap<String, XqueryNodes> copy = deepCopy(scopeContext.peek());
+		LinkedHashMap<String, XqueryNodes> copy = deepCopy(scopeContext.peek());
 		scopeContext.push(copy);
 		visit(ctx.forClause());
 		if (ctx.letClause() != null) { 
@@ -137,7 +142,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 //		}
 		if (ctx.whereClause() != null) {
 			ArrayList<String> keys = new ArrayList<String>(scopeContext.peek().keySet());
-			HashMap<String, XqueryNodes> evalContext = new HashMap<String, XqueryNodes>();
+			LinkedHashMap<String, XqueryNodes> evalContext = new LinkedHashMap<String, XqueryNodes>();
 			whereReturn(ctx, 0, keys, evalContext, result);
 		}
 		else {
@@ -366,7 +371,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		rpContext.push(x.getChildren());
 		XqueryNodes y = (XqueryNodes) visit(ctx.rp(1));
 		rpContext.pop();
-		return y.unique();
+		return y.uniqueById();
 	}
 
 	@Override public XqueryNodes visitRPBoth(XqueryParser.RPBothContext ctx)
@@ -375,7 +380,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		rpContext.push(x.getDescendants());
 		XqueryNodes y = (XqueryNodes) visit(ctx.rp(1));
 		rpContext.pop();
-		return y.unique();
+		return y.uniqueById();
 	}
 	
 	@Override public XqueryNodes visitRPWithFilter(XqueryParser.RPWithFilterContext ctx) 
