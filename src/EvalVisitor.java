@@ -31,7 +31,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		document = builder.newDocument();
 		rpContext = new Stack<XqueryNodes>();
 		scopeContext = new Stack<HashMap<String, XqueryNodes>>();
-		scopeContext.push(new HashMap<String, XqueryNodes>());
+		scopeContext.push(new HashMap<String, XqueryNodes>());	
 	}
 
 	public HashMap<String, XqueryNodes> deepCopy(HashMap<String, XqueryNodes> hashMap) {
@@ -56,14 +56,16 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 			}
 			scopeContext.pop(); 
 		}
-		HashMap<String, XqueryNodes> currentContext = scopeContext.peek();
-		String currentKey = keys.get(keyIndex);
-		XqueryNodes currentNodes = currentContext.get(currentKey);
-		for (int i = 0; i < currentNodes.size(); i++) {
-			Node singleNode = currentNodes.get(i);
-			XqueryNodes xn = new XqueryNodes(singleNode);
-			evalContext.put(currentKey, xn);
-			whereReturn(ctx, keyIndex + 1, keys, evalContext, returnVal); // recursive call
+		else {
+			HashMap<String, XqueryNodes> currentContext = scopeContext.peek();
+			String currentKey = keys.get(keyIndex);
+			XqueryNodes currentNodes = currentContext.get(currentKey);
+			for (int i = 0; i < currentNodes.size(); i++) {
+				Node singleNode = currentNodes.get(i);
+				XqueryNodes xn = new XqueryNodes(singleNode);
+				evalContext.put(currentKey, xn);
+				whereReturn(ctx, keyIndex + 1, keys, evalContext, returnVal); // recursive call
+			}
 		}
 	}
 	
@@ -78,6 +80,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	@Override public XqueryNodes visitXQString(XqueryParser.XQStringContext ctx) 
 	{ 
 		String string = ctx.String().getText();
+		string = string.substring(1, string.length()-1); // strip leading and trailing \"
 		Node textNode = document.createTextNode(string);
 		return new XqueryNodes(textNode);
 	}
@@ -126,6 +129,12 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 			visit(ctx.letClause());
 		}
 		XqueryNodes result = new XqueryNodes();
+//		for (String key : scopeContext.peek().keySet()) {
+//			System.out.println("Key: " + key);
+//			XqueryNodes xn = scopeContext.peek().get(key);
+//			xn.printNodes();
+//			System.out.println("---------------------------");
+//		}
 		if (ctx.whereClause() != null) {
 			ArrayList<String> keys = new ArrayList<String>(scopeContext.peek().keySet());
 			HashMap<String, XqueryNodes> evalContext = new HashMap<String, XqueryNodes>();
@@ -135,6 +144,8 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 			result = (XqueryNodes) visit(ctx.returnClause());
 		}
 		scopeContext.pop();
+		result = result.unique();
+		result.printNodes();
 		return result.unique(); // remove duplicates
 	}
 //
@@ -144,7 +155,8 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		Node outer = document.createElement(tagName);
 		XqueryNodes inner = (XqueryNodes) visit(ctx.xq());
 		for (int i = 0; i < inner.size(); i++) {
-			outer.appendChild(inner.get(i));
+			Node innerNode = document.importNode(inner.get(i), true);
+			outer.appendChild(innerNode);
 		}
 		return new XqueryNodes(outer);
 	}
@@ -296,7 +308,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		rpContext.push(root.getChildren());
 		XqueryNodes returnVal = (XqueryNodes) visit(ctx.rp());
 		rpContext.pop();
-		returnVal.printNodes();
+//		returnVal.printNodes();
 		return returnVal;
 	}
 	@Override public XqueryNodes visitAPBoth(XqueryParser.APBothContext ctx)
@@ -307,7 +319,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		rpContext.push(root.getDescendants());
 		XqueryNodes returnVal = (XqueryNodes) visit(ctx.rp());
 		rpContext.pop();
-		returnVal.printNodes();
+//		returnVal.printNodes();
 		return returnVal;
 	}
 	@Override public XqueryNodes visitRPName(XqueryParser.RPNameContext ctx) 
@@ -393,18 +405,10 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 //		cur=r;
 //		return r;
 //	}
-//	@Override public ArrayList<Node> visitRPText(XqueryParser.RPTextContext ctx)
-//	{
-//		for(int i=0;i<cur.size();i++)
-//		{
-//			for(int j=0;j<cur.get(i).getChildNodes().getLength();j++)
-//			{
-//				if(cur.get(i).getChildNodes().item(j).getNodeType() == org.w3c.dom.Node.TEXT_NODE )//sooner may be rewrite.
-//				{
-//					System.out.print(cur.get(i).getChildNodes().item(j).getTextContent());
-//				}
-//			}
-//		}
-//		return cur;
-//	}
+	@Override public XqueryNodes visitRPText(XqueryParser.RPTextContext ctx)
+	{
+		XqueryNodes cur = rpContext.peek();
+		XqueryNodes returnVal = cur.getTextNodes();
+		return returnVal;
+	}
 }
