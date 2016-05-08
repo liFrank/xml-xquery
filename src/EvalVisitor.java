@@ -805,4 +805,15 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		return new XqueryBoolean(false);
 	}
 	
+	/*
+	 * 'not' cond
+	 * #conditionNot
+	 * jialong
+	 * 
+	 */
+	@Override public XqueryBoolean visitConditionNot(XqueryParser.ConditionNotContext ctx)
+	{
+		XqueryBoolean condition=(XqueryBoolean) visit(ctx.cond());
+		return condition.not();
+	}
 }
