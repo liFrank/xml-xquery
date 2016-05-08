@@ -748,4 +748,58 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		return returnVal;
 	}
 	
+	/*
+	 * '*'
+	 * #RPAll
+	 * Jialong
+	 */
+	@Override public XqueryNodes visitRPAll(XqueryParser.RPAllContext ctx) 
+	{
+		XqueryNodes current=rpContext.peek();
+		return current;
+	}
+	/*
+	 * rp ',' rp
+	 * #RPWithRP
+	 * Jialong
+	 */
+	@Override public XqueryNodes visitRPWithRP(XqueryParser.RPWithRPContext ctx)
+	{
+		XqueryNodes left = (XqueryNodes) visit(ctx.rp(0));
+		XqueryNodes right = (XqueryNodes) visit(ctx.rp(1));
+		return left.concat(right);
+	}
+	/*
+	 * '..'
+	 * #RPParents
+	 * Jialong
+	 */
+	@Override public XqueryNodes visitRPParents(XqueryParser.RPParentsContext ctx)
+	{
+		XqueryNodes current=rpContext.peek();
+		XqueryNodes parents=current.getParents().getParents();
+		return parents;
+	}
+	
+	/*
+	 * '.'
+	 * #RPCurrent
+	 * Jialong
+	 */
+	@Override public XqueryNodes visitRPCurrent(XqueryParser.RPCurrentContext ctx)
+	{
+		XqueryNodes current=rpContext.peek().getParents();
+		return current;
+	}
+	
+	/*
+	 * 'empty(' xq ')'
+	 * #ConditionEmpty
+	 * Jialong
+	 */
+	@Override public T visitConditionEmpty(XqueryParser.ConditionEmptyContext ctx)
+	{
+		
+	}
+	
 }
