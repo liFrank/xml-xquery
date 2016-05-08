@@ -747,4 +747,5 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		XqueryNodes returnVal = cur.getTextNodes();
 		return returnVal;
 	}
+	
 }
