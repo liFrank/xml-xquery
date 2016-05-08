@@ -619,10 +619,46 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 //		cur=parent;
 //		return cur;
 //	}
-//	@Override public ArrayList<Node> visitRPParanth(XqueryParser.RPParanthContext ctx) 
-//	{
-//		return (visit(ctx.rp()));
-//	}
+	/*
+	 * '(' rp ')'
+	 * #RPParanth
+	 * (non-Javadoc)
+	 * @see XqueryBaseVisitor#visitRPParanth(XqueryParser.RPParanthContext)
+	 */
+	@Override public XqueryNodes visitRPParanth(XqueryParser.RPParanthContext ctx) 
+	{
+		return (XqueryNodes) visit(ctx.rp());
+	}
+	
+	/*
+	 * '(' rp ')/' rp
+	 * #RPParanth1
+	 * (non-Javadoc)
+	 * @see XqueryBaseVisitor#visitRPParanth1(XqueryParser.RPParanth1Context)
+	 */
+	@Override public XqueryNodes visitRPParanth1(XqueryParser.RPParanth1Context ctx) 
+	{
+		XqueryNodes x = (XqueryNodes) visit(ctx.rp(0));
+		rpContext.push(x.getChildren());
+		XqueryNodes y = (XqueryNodes) visit(ctx.rp(1));
+		rpContext.pop();
+		return y.uniqueById();
+	}
+	
+	/*
+	 * '(' rp ')//' rp
+	 * #RPParanth2
+	 * (non-Javadoc)
+	 * @see XqueryBaseVisitor#visitRPParanth2(XqueryParser.RPParanth2Context)
+	 */
+	@Override public XqueryNodes visitRPParanth2(XqueryParser.RPParanth2Context ctx) 
+	{
+		XqueryNodes x = (XqueryNodes) visit(ctx.rp(0));
+		rpContext.push(x.getDescendants());
+		XqueryNodes y = (XqueryNodes) visit(ctx.rp(1));
+		rpContext.pop();
+		return y.uniqueById();
+	}
 //	
 //	@Override public ArrayList<Node> visitRPWithRP(XqueryParser.RPWithRPContext ctx)
 //	{

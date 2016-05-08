@@ -24,17 +24,19 @@ ap 	: 'doc(' String ')/' rp 		#APChildren
 	;
 	
 // relative path
-rp	: Name			#RPName
-	| '*'			#RPAll
-	| '..'			#RPParents
-	| '.'			#RPCurrent
-	| 'text()'		#RPText
-	| '@' Name		#RPAttribute
-	| '(' rp ')'	#RPParanth
-	| rp '/' rp		#RPChildren
-	| rp '//' rp	#RPBoth
-	| rp '[' f ']'	#RPWithFilter
-	| rp ',' rp 	#RPWithRP
+rp	: Name				#RPName
+	| '*'				#RPAll
+	| '..'				#RPParents
+	| '.'				#RPCurrent
+	| 'text()'			#RPText
+	| '@' Name			#RPAttribute
+	| '(' rp ')'		#RPParanth
+	| '(' rp ')/' rp 	#RPParanth1
+	| '(' rp ')//' rp 	#RPParanth2
+	| rp '/' rp			#RPChildren
+	| rp '//' rp		#RPBoth
+	| rp '[' f ']'		#RPWithFilter
+	| rp ',' rp 		#RPWithRP
 	;
 
 //path filter
