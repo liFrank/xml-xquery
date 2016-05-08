@@ -3,23 +3,17 @@
  */
 grammar Xquery;
 
-// XPath, entry point
-xp  : ap
-	| rp
-	| f
-	;    
-
 // Xquery sub-language for the project, entry point
-xq	: Var
-	| String
-	| ap
-	| '(' xq ')'
-	| xq ',' xq
-	| xq '/' rp
-	| xq '//' rp
-	| '<' Name '>' '{' xq '}' '</' Name '>'
-	| forClause (letClause | /*epsilon*/) (whereClause | /*epsilon*/) returnClause
-	| letClause xq
+xq	: Var																			#XQVar
+	| String																		#XQString
+	| ap																			#XQAp	
+	| '(' xq ')'																	#XQParanth
+	| xq ',' xq																		#XQWithXQ
+	| xq '/' rp																		#XQChildren																			
+	| xq '//' rp																	#XQBoth
+	| '<' Name '>' '{' xq '}' '</' Name '>'											#XQTag
+	| forClause (letClause | /*epsilon*/) (whereClause | /*epsilon*/) returnClause	#XQFor
+	| letClause xq																	#XQLet
 	;
 		
 // absolute path 
@@ -84,7 +78,7 @@ Name 		: ( 'a' .. 'z' | 'A' .. 'Z' | '_' )( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9'
 Var			: '$' Name;
 
 // fileName, StringConstant
-String	: '"' ~('\n'|'\r')* '"';
+String	: '"' ~('\n'|'\r'|'"')* '"';
 
 // Ignore
 //Comment 	:  '//' ~('\n')* '\n' -> skip;

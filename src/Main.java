@@ -18,8 +18,8 @@ public class Main {
 	        ParseTree tree = parser.xq(); // begin parsing at rule 'xq'
 	        System.out.println("Visitor:");
 	        EvalVisitor evalByVisitor = new EvalVisitor();
-	        evalByVisitor.visit(tree);
-	        System.out.println();
+	        XqueryNodes result = (XqueryNodes) evalByVisitor.visit(tree);
+	        result.printNodes();
 		}
 		catch (Exception e) {
 			e.printStackTrace();

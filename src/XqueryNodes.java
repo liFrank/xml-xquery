@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -42,11 +43,42 @@ public class XqueryNodes implements IXqueryValue {
 		return nodes.add(n);
 	}
 	
+	public XqueryNodes concat(XqueryNodes other) {
+		ArrayList<Node> combined = new ArrayList<Node>();
+		combined.addAll(this.nodes);
+		for (int i = 0; i < other.size(); i++) {
+			combined.add(other.get(i));
+		}
+		return new XqueryNodes(combined);
+	}
+	
 	public XqueryNodes unique() { 
+		return uniqueByValue();
+	}
+	
+	public XqueryNodes uniqueById() { 
 		ArrayList<Node> uniques = new ArrayList<Node>();
 		Set<Node> uniqueSet = new HashSet<Node>(nodes);
 		for (Node n : uniqueSet) 
 			uniques.add(n);
+		return new XqueryNodes(uniques);
+	}
+	
+	public XqueryNodes uniqueByValue() { 
+		ArrayList<Node> uniques = new ArrayList<Node>();
+		for (int i = 0; i < nodes.size(); i++) {
+			boolean add = true;
+			Node candidate = nodes.get(i);
+			for (int j = 0; j < nodes.size() && i != j; j++) {
+				Node other = nodes.get(j);
+				if (candidate.isEqualNode(other)) {
+					add = false;
+					break;
+				}
+			}
+			if (add) 
+				uniques.add(candidate);
+		}
 		return new XqueryNodes(uniques);
 	}
 	
@@ -159,10 +191,14 @@ public class XqueryNodes implements IXqueryValue {
 	public String getNodeString(Node node) {
 	    try {
 	        StringWriter writer = new StringWriter();
-	        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+	        transformerFactory.setAttribute("indent-number", 2);
+	        Transformer transformer = transformerFactory.newTransformer();
+	        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+	        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 	        transformer.transform(new DOMSource(node), new StreamResult(writer));
 	        String output = writer.toString();
-	        return output.substring(output.indexOf("?>") + 2);//remove <?xml version="1.0" encoding="UTF-8"?>
+	        return output;
 	    } catch (TransformerException e) {
 	        e.printStackTrace();
 	    }
@@ -171,7 +207,8 @@ public class XqueryNodes implements IXqueryValue {
 	
 	public void printNodes() {
 		for (int i = 0; i < nodes.size(); i++) {
-			printNode(nodes.get(i));
+//			printNode(nodes.get(i));
+			System.out.println(getNodeString(nodes.get(i)));
 		}
 	}
 	
@@ -187,7 +224,8 @@ public class XqueryNodes implements IXqueryValue {
 					textContent = child.getTextContent();
 				}
 	    	}
-	    	System.out.println(" -> " + textContent);
+	    	if (!textContent.isEmpty())
+	    		System.out.println(" -> " + textContent);
 	    }
 	    else if (rootNode.getNodeType() == Node.TEXT_NODE) {
 	    	System.out.print(", Node Type: " + "TEXT_NODE");
