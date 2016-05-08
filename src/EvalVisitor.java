@@ -797,9 +797,12 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	 * #ConditionEmpty
 	 * Jialong
 	 */
-	@Override public T visitConditionEmpty(XqueryParser.ConditionEmptyContext ctx)
+	@Override public XqueryBoolean visitConditionEmpty(XqueryParser.ConditionEmptyContext ctx)
 	{
-		
+		XqueryNodes tobechecked= (XqueryNodes) visit(ctx.xq());
+		if(tobechecked.size()==0)
+			return new XqueryBoolean(true);
+		return new XqueryBoolean(false);
 	}
 	
 }
