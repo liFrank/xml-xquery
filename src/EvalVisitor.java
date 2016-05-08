@@ -146,13 +146,15 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	 * Evaluate where clause using every combination of ind. elements in variables from the context. 
 	 * In base case, evaluate where and return clauses using recursively generated combinations
 	 */
-	public void whereReturn(XqueryParser.XQForContext ctx, int keyIndex, XqueryNodes returnVal) {
+	public void flwr(XqueryParser.XQForContext ctx, int keyIndex, XqueryNodes returnVal) {
 		// base case
 		int numVariables = ctx.forClause().Var().size();
 		if (ctx.letClause() != null)
 			numVariables = numVariables + ctx.letClause().Var().size();
 		if (keyIndex >= numVariables) {
-			XqueryBoolean condition = (XqueryBoolean) visit(ctx.whereClause());
+			XqueryBoolean condition = new XqueryBoolean(true); // Assume true unless there is a whereClause
+			if (ctx.whereClause() != null) 
+				condition = (XqueryBoolean) visit(ctx.whereClause());
 			if (condition.getValue() == true) {
 				XqueryNodes ret = (XqueryNodes) visit(ctx.returnClause());
 				for (int i = 0; i < ret.size(); i++) 
@@ -176,7 +178,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 				Node singleNode = currentNodes.get(i);
 				XqueryNodes xn = new XqueryNodes(singleNode);
 				currentContext.put(currentKey, xn);
-				whereReturn(ctx, keyIndex + 1, returnVal); // recursive call
+				flwr(ctx, keyIndex + 1, returnVal); // recursive call
 			}
 		}
 	}
@@ -192,16 +194,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		HashMap<String, XqueryNodes> copy = new HashMap<String, XqueryNodes>(scopeContext.peek());
 		scopeContext.push(copy);
 		XqueryNodes result = new XqueryNodes();
-		if (ctx.whereClause() == null) { // Handle simple case w/o a whereClause
-			visit(ctx.forClause());
-			if (ctx.letClause() != null) { 
-				visit(ctx.letClause());
-			}
-			result = (XqueryNodes) visit(ctx.returnClause());
-		}
-		else { // Handle whereClause
-			whereReturn(ctx, 0, result);
-		}
+		flwr(ctx, 0, result);
 		scopeContext.pop();
 		return result;
 	}
@@ -473,12 +466,51 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 //	@Override public T visitConditionEmpty(XqueryParser.ConditionEmptyContext ctx) { return visitChildren(ctx); }
 
 	/*
+	 * For use with #ConditionIn rule
+	 * Evaluate where clause using every combination of ind. elements in variables from the context. 
+	 * In base case, evaluate the condition using recursively generated combinations
+	 */
+	public XqueryBoolean someSatisfies(XqueryParser.ConditionInContext ctx, int keyIndex) {
+		// base case
+		int numVariables = ctx.Var().size();
+		if (keyIndex >= numVariables) {
+			XqueryBoolean condition = (XqueryBoolean) visit(ctx.cond());
+			return condition;
+		}
+		else {
+			HashMap<String, XqueryNodes> currentContext = scopeContext.peek();
+			String currentKey = null;
+			XqueryNodes currentNodes = null;
+			if (keyIndex < ctx.Var().size()) { // handle vars in forClause
+				currentKey = ctx.Var(keyIndex).getText();
+				currentNodes = (XqueryNodes) visit(ctx.xq(keyIndex));
+			}
+			for (int i = 0; i < currentNodes.size(); i++) {
+				Node singleNode = currentNodes.get(i);
+				XqueryNodes xn = new XqueryNodes(singleNode);
+				currentContext.put(currentKey, xn);
+				XqueryBoolean result = someSatisfies(ctx, keyIndex + 1); // recursive call
+				if (result.getValue() == true)
+					return new XqueryBoolean(true);
+			}
+			return new XqueryBoolean(false);
+		}
+	}
+	
+	/*
 	 * 'some' Var 'in' xq (',' Var 'in' xq)* 'satisfies' cond
 	 * #ConditionIn
 	 * (non-Javadoc)
 	 * @see XqueryBaseVisitor#visitConditionIn(XqueryParser.ConditionInContext)
 	 */
-//	@Override public T visitConditionIn(XqueryParser.ConditionInContext ctx) { return visitChildren(ctx); }
+	@Override public XqueryBoolean visitConditionIn(XqueryParser.ConditionInContext ctx) 
+	{ 
+		HashMap<String, XqueryNodes> copy = new HashMap<String, XqueryNodes>(scopeContext.peek());
+		scopeContext.push(copy);
+		XqueryBoolean result = someSatisfies(ctx, 0);
+		scopeContext.pop();
+		return result;
+	}
 	
 	
 	/*
