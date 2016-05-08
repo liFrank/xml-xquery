@@ -138,7 +138,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	 */
 	@Override public XqueryNodes visitXQLet(XqueryParser.XQLetContext ctx) { 
 		visit(ctx.letClause());
-		return null;
+		return (XqueryNodes) visit(ctx.xq());
 	}
 
 	/*
