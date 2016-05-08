@@ -18,7 +18,8 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	Stack<XqueryNodes> rpContext = new Stack<XqueryNodes>();
 	HashMap<String,XqueryNodes> qyContext=new HashMap<String,XqueryNodes>();
 	Stack<HashMap<String,XqueryNodes>> scpContext=new Stack<HashMap<String,XqueryNodes>>();
-	
+	Document inDocument;
+	Document outDocument;
 	@Override 
 	public XqueryBoolean visitFilterAnd(XqueryParser.FilterAndContext ctx)
 	{
@@ -253,30 +254,6 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		return returnVal;
 	}
 	
-//	@Override public ArrayList<Node> visitRPAll(XqueryParser.RPAllContext ctx)
-//	{
-//		ArrayList<Node> r=new ArrayList<Node>();
-//		for(int i=0;i<cur.size();i++)
-//		{
-//			r.addAll(getChildren(cur.get(i)));
-//		}
-//		cur=r;
-//		return r;
-//	}
-//	@Override public ArrayList<Node> visitRPText(XqueryParser.RPTextContext ctx)
-//	{
-//		for(int i=0;i<cur.size();i++)
-//		{
-//			for(int j=0;j<cur.get(i).getChildNodes().getLength();j++)
-//			{
-//				if(cur.get(i).getChildNodes().item(j).getNodeType() == org.w3c.dom.Node.TEXT_NODE )//sooner may be rewrite.
-//				{
-//					System.out.print(cur.get(i).getChildNodes().item(j).getTextContent());
-//				}
-//			}
-//		}
-//		return cur;
-//	}
 		//by Jialong
 		//???
 		@Override public XqueryNodes visitRPAll(XqueryParser.RPAllContext ctx) 
@@ -376,6 +353,105 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 			scpContext.push(oldScope);
 			DFS_query(0,ctx.forClause().Var().size(),ctx,result);
 			qyContext=scpContext.pop();
+			return result;
+		}
+		//by Jialong
+		@Override public XqueryNodes visitXQLet(@NotNull XqueryParser.XQLetContext ctx) 
+		{
+			HashMap<String,XqueryNodes> oldScope= new HashMap<String,XqueryNodes>(qyContext);
+			scpContext.push(oldScope);
+			XqueryNodes result=(XqueryNodes) visitChildren(ctx);//??
+			qyContext=scpContext.pop();
+			return result;
+		}
+		
+		//by Jialong
+		@Override public XqueryBoolean visitWhereClause(@NotNull XqueryParser.WhereClauseContext ctx)
+		{
+			return (XqueryBoolean) visit(ctx.cond());
+		}
+		
+		//by Jialong
+		@Override public XqueryNodes visitXQVariable(@NotNull XqueryParser.XQVariableContext ctx)
+		{
+			return qyContext.get(ctx.Var().getText());
+		}
+		
+		//by Jialong
+		@Override public XqueryNodes visitXQAP(@NotNull XqueryParser.XQAPContext ctx)
+		{
+			return (XqueryNodes) visit(ctx.ap());
+		}
+		//by Jialong
+		@Override public XqueryNodes visitXQParanth(@NotNull XqueryParser.XQParanthContext ctx)
+		{
+			return (XqueryNodes) visit(ctx.xq());
+		}
+		//by Jialong
+		@Override public XqueryNodes visitXQRPChildren(@NotNull XqueryParser.XQRPChildrenContext ctx)
+		{
+			
+		}
+		//by Jialong
+		@Override public XqueryNodes visitLetClause(@NotNull XqueryParser.LetClauseContext ctx)
+		{
+			for(int i=0;i<ctx.Var().size();i++)
+			{
+				qyContext.put(ctx.Var(i).getText(), (XqueryNodes) visit(ctx.xq(i)));
+			}
+			return null;
+		}
+		//by Jialong
+		@Override public XqueryNodes visitXQElement(@NotNull XqueryParser.XQElementContext ctx)
+		{
+			if (outDocument == null){
+				try {
+					DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+					DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+					outDocument = documentBuilder.newDocument();
+				} catch (ParserConfigurationException e) {
+					e.printStackTrace();
+				}
+			}
+			XqueryNodes result = new XqueryNodes();
+			XqueryNodes xqResult = (XqueryNodes) visit(ctx.xq());
+			result.add(makeElement(ctx.Name(0).getText(), xqResult));
+			return result; 
+		}
+		//by Jialong
+		private Node makeElement(String name, XqueryNodes xqResult) {
+			// TODO Auto-generated method stub
+				Node result = outDocument.createElement(name);
+				for (Node n : xqResult.getInner()) {
+					if (n != null && n.getNodeType() != Node.DOCUMENT_NODE) {
+						Node newNode = outDocument.importNode(n, true);
+						result.appendChild(newNode);
+					}
+				}
+				return result;
+		}
+		//by Jialong
+		@Override public XqueryNodes visitXQWithXQ(@NotNull XqueryParser.XQWithXQContext ctx)
+		{
+			XqueryNodes X1=(XqueryNodes) visit(ctx.xq(0));
+			XqueryNodes X2=(XqueryNodes) visit(ctx.xq(1));
+			XqueryNodes newlist=new XqueryNodes();
+			newlist.addAll(X1);
+			newlist.addAll(X2);
+			return newlist;
+		}
+		//by Jialong
+		@Override public XqueryNodes visitXQString(@NotNull XqueryParser.XQStringContext ctx)
+		{
+			Node n = makeText(ctx.String().getText().substring(1, ctx.String().getText().length()-1));
+			XqueryNodes result = new XqueryNodes();
+			result.add(n);
+			return result; 
+		}
+		//by Jialong
+		private Node makeText(String name) {
+			// TODO Auto-generated method stub
+			Node result = inDocument.createTextNode(name);
 			return result;
 		}
 }
