@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -190,10 +191,14 @@ public class XqueryNodes implements IXqueryValue {
 	public String getNodeString(Node node) {
 	    try {
 	        StringWriter writer = new StringWriter();
-	        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+	        transformerFactory.setAttribute("indent-number", 2);
+	        Transformer transformer = transformerFactory.newTransformer();
+	        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+	        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 	        transformer.transform(new DOMSource(node), new StreamResult(writer));
 	        String output = writer.toString();
-	        return output.substring(output.indexOf("?>") + 2);//remove <?xml version="1.0" encoding="UTF-8"?>
+	        return output;
 	    } catch (TransformerException e) {
 	        e.printStackTrace();
 	    }
