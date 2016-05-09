@@ -820,11 +820,13 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	 * 
 	 * #'@' Name
 	 * #RPAttribute
-	 * 
+	 * Jialong
 	 * 
 	 */
-	@Override public T visitRPAttribute(XqueryParser.RPAttributeContext ctx)
+	//add @? or not?
+	@Override public XqueryNodes visitRPAttribute(XqueryParser.RPAttributeContext ctx)
 	{
-		
+		XqueryNodes current=rpContext.peek();
+		return current.getAttributeNodes(ctx.Name().getText());
 	}
 }
