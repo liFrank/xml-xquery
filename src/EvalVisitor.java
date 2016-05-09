@@ -816,4 +816,15 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		XqueryBoolean condition=(XqueryBoolean) visit(ctx.cond());
 		return condition.not();
 	}
+	/*
+	 * 
+	 * #'@' Name
+	 * #RPAttribute
+	 * 
+	 * 
+	 */
+	@Override public T visitRPAttribute(XqueryParser.RPAttributeContext ctx)
+	{
+		
+	}
 }
