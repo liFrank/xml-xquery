@@ -816,4 +816,17 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		XqueryBoolean condition=(XqueryBoolean) visit(ctx.cond());
 		return condition.not();
 	}
+	/*
+	 * 
+	 * #'@' Name
+	 * #RPAttribute
+	 * Jialong
+	 * 
+	 */
+	//add @? or not?
+	@Override public XqueryNodes visitRPAttribute(XqueryParser.RPAttributeContext ctx)
+	{
+		XqueryNodes current=rpContext.peek();
+		return current.getAttributeNodes(ctx.Name().getText());
+	}
 }
