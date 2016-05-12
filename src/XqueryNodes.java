@@ -212,31 +212,31 @@ public class XqueryNodes implements IXqueryValue {
 		}
 	}
 	
-	private void printNode(Node rootNode) {
-	    System.out.print(rootNode.getNodeName());
-	    if (rootNode.getNodeType() == Node.ELEMENT_NODE) {
-	    	System.out.print(", Node Type: " + "ELEMENT_NODE");
-	    	String textContent = "";
-	    	NodeList children = rootNode.getChildNodes();
-	    	for (int i = 0; i < children.getLength(); i++) {
-				Node child = children.item(i);
-				if (child.getNodeType() == Node.TEXT_NODE) {
-					textContent = child.getTextContent();
-				}
-	    	}
-	    	if (!textContent.isEmpty())
-	    		System.out.println(" -> " + textContent);
-	    }
-	    else if (rootNode.getNodeType() == Node.TEXT_NODE) {
-	    	System.out.print(", Node Type: " + "TEXT_NODE");
-	    	String textContent = rootNode.getTextContent();
-	    	System.out.println(" -> " + textContent);
-	    }
-	    else if (rootNode.getNodeType() == Node.ATTRIBUTE_NODE) {
-	    	System.out.println(", Node Type: " + "ATTRIBUTE_NODE");
-	    }
-	    else {
-	    	System.out.println(", Node Type: " + rootNode.getNodeType());
-	    }
-	}
+//	private void printNode(Node rootNode) {
+//	    System.out.print(rootNode.getNodeName());
+//	    if (rootNode.getNodeType() == Node.ELEMENT_NODE) {
+//	    	System.out.print(", Node Type: " + "ELEMENT_NODE");
+//	    	String textContent = "";
+//	    	NodeList children = rootNode.getChildNodes();
+//	    	for (int i = 0; i < children.getLength(); i++) {
+//				Node child = children.item(i);
+//				if (child.getNodeType() == Node.TEXT_NODE) {
+//					textContent = child.getTextContent();
+//				}
+//	    	}
+//	    	if (!textContent.isEmpty())
+//	    		System.out.println(" -> " + textContent);
+//	    }
+//	    else if (rootNode.getNodeType() == Node.TEXT_NODE) {
+//	    	System.out.print(", Node Type: " + "TEXT_NODE");
+//	    	String textContent = rootNode.getTextContent();
+//	    	System.out.println(" -> " + textContent);
+//	    }
+//	    else if (rootNode.getNodeType() == Node.ATTRIBUTE_NODE) {
+//	    	System.out.println(", Node Type: " + "ATTRIBUTE_NODE");
+//	    }
+//	    else {
+//	    	System.out.println(", Node Type: " + rootNode.getNodeType());
+//	    }
+//	}
 }

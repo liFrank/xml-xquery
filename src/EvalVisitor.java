@@ -2,6 +2,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Stack;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -15,6 +17,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	private Document document;
 	private Stack<XqueryNodes> rpContext;
 	private Stack<HashMap<String, XqueryNodes>> scopeContext;
+	private Set<String> visitedVariables;
 	
 	public EvalVisitor() {
 		super(); // may be unnecessary
@@ -31,6 +34,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		rpContext = new Stack<XqueryNodes>();
 		scopeContext = new Stack<HashMap<String, XqueryNodes>>();
 		scopeContext.push(new HashMap<String, XqueryNodes>());	
+		visitedVariables = new HashSet<String>();
 	}
 	
 	/*
@@ -48,6 +52,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		XqueryNodes ret = (XqueryNodes) scopeContext.peek().get(ctx.Var().getText()); 
 		if (ret == null)// can return null if not found
 			ret = new XqueryNodes(); // return empty
+		visitedVariables.add(ctx.Var().getText());
 		return ret;
 	}
 
@@ -146,14 +151,14 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	 * Evaluate where clause using every combination of ind. elements in variables from the context. 
 	 * In base case, evaluate where and return clauses using recursively generated combinations
 	 */
-	public void flwr(XqueryParser.XQForContext ctx, int keyIndex, XqueryNodes returnVal) {
+	public void flwr(XqueryParser.XQForContext ctx, int keyIndex, Set<String> whereVars, XqueryNodes returnVal) {
 		// base case
 		int numVariables = ctx.forClause().Var().size();
 		if (ctx.letClause() != null)
 			numVariables = numVariables + ctx.letClause().Var().size();
 		if (keyIndex >= numVariables) {
 			XqueryBoolean condition = new XqueryBoolean(true); // Assume true unless there is a whereClause
-			if (ctx.whereClause() != null) 
+			if (ctx.whereClause() != null)
 				condition = (XqueryBoolean) visit(ctx.whereClause());
 			if (condition.getValue() == true) {
 				XqueryNodes ret = (XqueryNodes) visit(ctx.returnClause());
@@ -174,11 +179,18 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 				currentKey = ctx.letClause().Var(offsetKeyIndex).getText();
 				currentNodes = (XqueryNodes) visit(ctx.letClause().xq(offsetKeyIndex));
 			}
-			for (int i = 0; i < currentNodes.size(); i++) {
-				Node singleNode = currentNodes.get(i);
-				XqueryNodes xn = new XqueryNodes(singleNode);
-				currentContext.put(currentKey, xn);
-				flwr(ctx, keyIndex + 1, returnVal); // recursive call
+			// Put into context list of nodes (special case of let) or individual nodes
+			if (keyIndex >= ctx.forClause().Var().size() && !whereVars.contains(currentKey)) { // Let vars not in where clause
+				currentContext.put(currentKey, currentNodes); // binding should be with full list of nodes
+				flwr(ctx, keyIndex + 1, whereVars, returnVal); // recursive call
+			}
+			else { // let vars in where clause & for vars
+				for (int i = 0; i < currentNodes.size(); i++) {
+					Node singleNode = currentNodes.get(i);
+					XqueryNodes xn = new XqueryNodes(singleNode);
+					currentContext.put(currentKey, xn);
+					flwr(ctx, keyIndex + 1, whereVars, returnVal); // recursive call
+				}
 			}
 		}
 	}
@@ -193,8 +205,12 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	{ 
 		HashMap<String, XqueryNodes> copy = new HashMap<String, XqueryNodes>(scopeContext.peek());
 		scopeContext.push(copy);
+		visitedVariables.clear();
+		if (ctx.whereClause() != null)
+			visit(ctx.whereClause()); // populate visitedVariables
+		Set<String> whereVars = new HashSet<String>(visitedVariables);
 		XqueryNodes result = new XqueryNodes();
-		flwr(ctx, 0, result);
+		flwr(ctx, 0, whereVars, result);
 		scopeContext.pop();
 		return result;
 	}
