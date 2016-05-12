@@ -30,13 +30,13 @@ rp	: Name				#RPName
 	| '.'				#RPCurrent
 	| 'text()'			#RPText
 	| '@' Name			#RPAttribute
-	| '(' rp ')'		#RPParanth
-	| '(' rp ')/' rp 	#RPParanth1
-	| '(' rp ')//' rp 	#RPParanth2
+//	| '(' rp ')/' rp 	#RPParanth1
+//	| '(' rp ')//' rp 	#RPParanth2
 	| rp '/' rp			#RPChildren
 	| rp '//' rp		#RPBoth
-	| rp '[' f ']'		#RPWithFilter
 	| rp ',' rp 		#RPWithRP
+	| '(' rp ')'		#RPParanth
+	| rp '[' f ']'		#RPWithFilter
 	;
 
 //path filter
