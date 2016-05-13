@@ -17,10 +17,10 @@ xq	: Var																			#XQVar
 	;
 		
 // absolute path 
-ap 	: 'doc(' String ')/' rp 		#APChildren
-	| 'doc(' String ')//' rp		#APBoth
-	| 'document(' String ')/' rp 	#APChildren
-	| 'document(' String ')//' rp 	#APBoth
+ap 	: 'doc(' String ')' '/' rp 		#APChildren
+	| 'doc(' String ')' '//' rp		#APBoth
+	| 'document(' String ')' '/' rp 	#APChildren
+	| 'document(' String ')' '//' rp 	#APBoth
 	;
 	
 // relative path
@@ -30,12 +30,12 @@ rp	: Name				#RPName
 	| '.'				#RPCurrent
 	| 'text()'			#RPText
 	| '@' Name			#RPAttribute
-//	| '(' rp ')/' rp 	#RPParanth1
-//	| '(' rp ')//' rp 	#RPParanth2
+	//| '(' rp ')/' rp 	#RPParanth1
+	//| '(' rp ')//' rp 	#RPParanth2
+	| '(' rp ')'		#RPParanth
 	| rp '/' rp			#RPChildren
 	| rp '//' rp		#RPBoth
 	| rp ',' rp 		#RPWithRP
-	| '(' rp ')'		#RPParanth
 	| rp '[' f ']'		#RPWithFilter
 	;
 
