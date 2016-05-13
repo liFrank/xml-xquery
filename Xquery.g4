@@ -61,7 +61,7 @@ cond	: xq '=' xq													#ConditionEqual
 		| xq 'eq' xq												#ConditionEqual
 		| xq '==' xq												#ConditionIs
 		| xq 'is' xq												#ConditionIs
-		| 'empty(' xq ')'											#ConditionEmpty
+		| 'empty' '(' xq ')'											#ConditionEmpty
 		| 'some' Var 'in' xq (',' Var 'in' xq)* 'satisfies' cond	#ConditionIn
 		| '(' cond ')'												#ConditionParanth
 		| cond 'and' cond											#ConditionAnd
