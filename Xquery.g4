@@ -30,8 +30,6 @@ rp	: Name				#RPName
 	| '.'				#RPCurrent
 	| 'text()'			#RPText
 	| '@' Name			#RPAttribute
-	//| '(' rp ')/' rp 	#RPParanth1
-	//| '(' rp ')//' rp 	#RPParanth2
 	| '(' rp ')'		#RPParanth
 	| rp '/' rp			#RPChildren
 	| rp '//' rp		#RPBoth
