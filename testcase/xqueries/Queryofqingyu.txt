@@ -1,0 +1,17 @@
+<result>
+{
+for    $a in document("/Users/jialong/xml-xquery/testcase/xml/j_caesar.xml")/ACT
+let    $sc:=  $a/SCENE,  $sp:=$sc/SPEECH, $l:= $sp/LINE
+where  $sp/LINE/text() ="No worthier than the dust!"
+return <speaks>{
+<who>{$sp/SPEAKER/text()}</who>,
+<content>{$l/text()}</content>,
+<when>
+{<act>{$a/TITLE/text()}</act>,
+        <scene>{$sc/TITLE/text()}</scene>
+}
+</when>
+}
+</speaks>
+}
+</result>

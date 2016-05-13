@@ -15,6 +15,7 @@ public class Main {
 		// TODO Auto-generated method stub
 //		ANTLRInputStream input = new ANTLRInputStream( "" );
 		try {
+
 			String filePath;
 			if (args.length > 0) // command-line argument
 				filePath = args[0];
