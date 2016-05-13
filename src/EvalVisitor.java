@@ -474,14 +474,6 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	}
 	
 	/*
-	 * 'empty(' xq ')'
-	 * #ConditionEmpty
-	 * (non-Javadoc)
-	 * @see XqueryBaseVisitor#visitConditionEmpty(XqueryParser.ConditionEmptyContext)
-	 */
-//	@Override public T visitConditionEmpty(XqueryParser.ConditionEmptyContext ctx) { return visitChildren(ctx); }
-
-	/*
 	 * For use with #ConditionIn rule
 	 * Evaluate where clause using every combination of ind. elements in variables from the context. 
 	 * In base case, evaluate the condition using recursively generated combinations
@@ -621,20 +613,6 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		return returnVal;
 	}
 	
-//	@Override public ArrayList<Node> visitRPCurrent(XqueryParser.RPCurrentContext ctx) 
-//	{
-//		return cur;
-//	}
-//	@Override public ArrayList<Node> visitRPParents(XqueryParser.RPParentsContext ctx) 
-//	{
-//		ArrayList<Node> parent=new ArrayList<Node>();
-//		for(int i=0;i<cur.size();i++)
-//		{
-//			parent.add(cur.get(i).getParentNode());
-//		}
-//		cur=parent;
-//		return cur;
-//	}
 	/*
 	 * '(' rp ')'
 	 * #RPParanth
@@ -646,47 +624,6 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		return (XqueryNodes) visit(ctx.rp());
 	}
 	
-	/*
-	 * '(' rp ')/' rp
-	 * #RPParanth1
-	 * (non-Javadoc)
-	 * @see XqueryBaseVisitor#visitRPParanth1(XqueryParser.RPParanth1Context)
-	 */
-	@Override public XqueryNodes visitRPParanth1(XqueryParser.RPParanth1Context ctx) 
-	{
-		XqueryNodes x = (XqueryNodes) visit(ctx.rp(0));
-		rpContext.push(x.getChildren());
-		XqueryNodes y = (XqueryNodes) visit(ctx.rp(1));
-		rpContext.pop();
-		return y.uniqueById();
-	}
-	
-	/*
-	 * '(' rp ')//' rp
-	 * #RPParanth2
-	 * (non-Javadoc)
-	 * @see XqueryBaseVisitor#visitRPParanth2(XqueryParser.RPParanth2Context)
-	 */
-	@Override public XqueryNodes visitRPParanth2(XqueryParser.RPParanth2Context ctx) 
-	{
-		XqueryNodes x = (XqueryNodes) visit(ctx.rp(0));
-		rpContext.push(x.getDescendants());
-		XqueryNodes y = (XqueryNodes) visit(ctx.rp(1));
-		rpContext.pop();
-		return y.uniqueById();
-	}
-//	
-//	@Override public ArrayList<Node> visitRPWithRP(XqueryParser.RPWithRPContext ctx)
-//	{
-//		ArrayList<Node> tmp=new ArrayList<Node>();
-//		tmp.addAll(cur);
-//		ArrayList<Node> r=new ArrayList<Node>();
-//		r.addAll(visit(ctx.rp(0)));
-//		cur=tmp;
-//		r.addAll(visit(ctx.rp(1)));
-//		return r;
-//	}
-//	
 	/*
 	 * rp '/' rp
 	 * #RPChildren
@@ -739,17 +676,6 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		}
 		return returnVal;
 	}
-	
-//	@Override public ArrayList<Node> visitRPAll(XqueryParser.RPAllContext ctx)
-//	{
-//		ArrayList<Node> r=new ArrayList<Node>();
-//		for(int i=0;i<cur.size();i++)
-//		{
-//			r.addAll(getChildren(cur.get(i)));
-//		}
-//		cur=r;
-//		return r;
-//	}
 	
 	/*
 	 * 'text()'
