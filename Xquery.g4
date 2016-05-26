@@ -14,13 +14,14 @@ xq	: Var																			#XQVar
 	| '<' Name '>' '{' xq '}' '</' Name '>'											#XQTag
 	| forClause (letClause | /*epsilon*/) (whereClause | /*epsilon*/) returnClause	#XQFor
 	| letClause xq																	#XQLet
-	;
+	| 'join' '(' xq ',' xq ',' NameList ',' NameList ')'							#XQJoin
+	;																	
 		
 // absolute path 
-ap 	: 'doc(' String ')' '/' rp 		#APChildren
-	| 'doc(' String ')' '//' rp		#APBoth
-	| 'document(' String ')' '/' rp 	#APChildren
-	| 'document(' String ')' '//' rp 	#APBoth
+ap 	: 'doc' '(' String ')' '/' rp 			#APChildren
+	| 'doc' '(' String ')' '//' rp			#APBoth
+	| 'document' '(' String ')' '/' rp 		#APChildren
+	| 'document' '(' String ')' '//' rp 	#APBoth
 	;
 	
 // relative path
@@ -61,7 +62,7 @@ cond	: xq '=' xq													#ConditionEqual
 		| xq 'eq' xq												#ConditionEqual
 		| xq '==' xq												#ConditionIs
 		| xq 'is' xq												#ConditionIs
-		| 'empty' '(' xq ')'											#ConditionEmpty
+		| 'empty' '(' xq ')'										#ConditionEmpty
 		| 'some' Var 'in' xq (',' Var 'in' xq)* 'satisfies' cond	#ConditionIn
 		| '(' cond ')'												#ConditionParanth
 		| cond 'and' cond											#ConditionAnd
@@ -76,6 +77,9 @@ Name 		: ( 'a' .. 'z' | 'A' .. 'Z' | '_' )( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9'
 
 // Var
 Var			: '$' Name;
+
+// attList
+NameList	: '[' Name (',' Name)* ']';
 
 // fileName, StringConstant
 String	: '"' ~('\n'|'\r'|'"')* '"';
