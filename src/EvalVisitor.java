@@ -296,7 +296,10 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	 * @see XqueryBaseVisitor#visitReturnClause(XqueryParser.ReturnClauseContext)
 	 */
 	@Override public XqueryNodes visitReturnClause(XqueryParser.ReturnClauseContext ctx) { 
-		return (XqueryNodes) visit(ctx.xq()); 
+		XqueryNodes pinter=(XqueryNodes) visit(ctx.xq()); 
+		//pinter.printNodes();
+		return pinter;
+		//return (XqueryNodes) visit(ctx.xq()); 
 	}
 
 	/*
@@ -770,5 +773,103 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	{
 		XqueryNodes current=rpContext.peek();
 		return current.getAttributeNodes(ctx.Name().getText());
+	}
+	/*
+	 * # 'join' '(' xq ',' xq ',' NameList ',' NameList ')'
+	 * #XQJoin
+	 * Jialong
+	 *
+	 */
+	@Override public XqueryNodes visitXQJoin(XqueryParser.XQJoinContext ctx) 
+	{
+		XqueryNodes res=new XqueryNodes();
+		XqueryNodes left=(XqueryNodes) visit(ctx.xq(0));
+		int lengthofNameList=ctx.nameList(0).Name().size();
+		ArrayList<HashMap<String,XqueryNodes>> resfromleft=new ArrayList<HashMap<String,XqueryNodes>>();
+		
+		for(int i=0;i<lengthofNameList;i++)
+		{
+			String var=ctx.nameList(0).Name(i).getText();//tb
+			HashMap<String,XqueryNodes> Hashofvar=new HashMap<String,XqueryNodes>();
+			for(int j=0;j<left.size();j++)
+			{
+				Node n=left.get(j);
+				Element leftnode=(Element) n;
+				XqueryNodes leftnodesbytag=new XqueryNodes(leftnode.getElementsByTagName(var).item(0));
+				String nodekey=leftnodesbytag.getNodeString(leftnodesbytag.get(0));
+				String nodekeyorigin=nodekey.substring(2+var.length(), nodekey.length()-3-var.length());
+				if(Hashofvar.containsKey(nodekeyorigin))
+				{
+					Hashofvar.get(nodekeyorigin).add(n.cloneNode(true));
+				}
+				else
+				{
+					XqueryNodes defaultlist=new XqueryNodes();
+					defaultlist.add(n.cloneNode(true));
+					Hashofvar.put(nodekeyorigin, defaultlist);
+				}
+			}
+			resfromleft.add(i,Hashofvar);
+		}
+		XqueryNodes right=(XqueryNodes) visit(ctx.xq(1));
+		XqueryNodes cmplist=new XqueryNodes();
+		for(int i=0;i<right.size();i++)
+		{
+			Node n=right.get(i);
+			Element rightnode=(Element) n;
+			for(int j=0;j<lengthofNameList;j++)
+			{
+				String var=ctx.nameList(1).Name(j).getText();//ta
+				XqueryNodes rightnodesbytag=new XqueryNodes(rightnode.getElementsByTagName(var).item(0));
+				String nodekey=rightnodesbytag.getNodeString(rightnodesbytag.get(0));
+				String nodekeyorigin=nodekey.substring(2+var.length(), nodekey.length()-3-var.length());
+				
+				if(!resfromleft.get(j).containsKey(nodekeyorigin))
+				{
+					cmplist.clear();
+					break;
+				}
+				if(cmplist.size()==0)
+				{
+					cmplist=cmplist.concat(resfromleft.get(j).get(nodekeyorigin));
+					//System.out.println(cmplist.size());
+				}
+				else
+				{
+					HashSet<String> uniquebycontent=new HashSet<String>();
+					XqueryNodes judgee= resfromleft.get(j).get(nodekeyorigin);
+					XqueryNodes reduced=new XqueryNodes();
+					for(int k=0;k<cmplist.size();k++)
+					{
+						XqueryNodes onenode=new XqueryNodes(cmplist.get(k));
+						uniquebycontent.add(onenode.getNodeString(onenode.get(0)));
+					}
+					for(int k=0;k<judgee.size();k++)
+					{
+						XqueryNodes onenode=new XqueryNodes(judgee.get(k));
+						if(uniquebycontent.contains(onenode.getNodeString(onenode.get(0))))
+						{
+							reduced.add(onenode.get(0).cloneNode(true));
+						}
+					}
+					cmplist=reduced;
+				}
+			}
+			if(cmplist.size()!=0)//somehow join success.
+			{
+				//System.out.println(cmplist.toString());
+				int lengthofnodeChildren=n.getChildNodes().getLength();
+				for(int m=0;m<cmplist.size();m++)
+				{
+					for(int j=0;j<lengthofnodeChildren;j++)
+					{
+						cmplist.get(m).appendChild(n.getChildNodes().item(j).cloneNode(true));
+					}
+				}
+				res=res.concat(cmplist);
+				cmplist.clear();
+			}
+		}
+		return res;
 	}
 }

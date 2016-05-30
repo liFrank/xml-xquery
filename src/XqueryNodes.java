@@ -38,7 +38,9 @@ public class XqueryNodes implements IXqueryValue {
 		else
 			return null;
 	}
-	
+	public void clear(){
+		nodes.clear();
+	}
 	public boolean add(Node n) {
 		return nodes.add(n);
 	}
@@ -190,12 +192,12 @@ public class XqueryNodes implements IXqueryValue {
 	
 	public String getNodeString(Node node) {
 	    try {
-	        StringWriter writer = new StringWriter();
+	    	StringWriter writer = new StringWriter();
 	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-	        transformerFactory.setAttribute("indent-number", 2);
+	        //transformerFactory.setAttribute("indent-number", 2);
 	        Transformer transformer = transformerFactory.newTransformer();
 	        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-	        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+	        //transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 	        transformer.transform(new DOMSource(node), new StreamResult(writer));
 	        String output = writer.toString();
 	        return output;
@@ -206,6 +208,7 @@ public class XqueryNodes implements IXqueryValue {
 	}
 	
 	public void printNodes() {
+		//System.out.println("size of nodes: "+nodes.size());
 		for (int i = 0; i < nodes.size(); i++) {
 //			printNode(nodes.get(i));
 			System.out.println(getNodeString(nodes.get(i)));

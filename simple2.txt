@@ -1,0 +1,9 @@
+for $b in doc("bib.xml")//book,
+	 		$tb in $b/title,
+           		$a in doc("bib.xml")//entry,
+           		$ta in $a/title
+where $tb eq $ta
+return
+<book-with-prices>{ $tb, <price-review>{ $a/price/text() }</price-review>,<price>{ $b/price/text() }</price> }</book-with-prices>
+
+
