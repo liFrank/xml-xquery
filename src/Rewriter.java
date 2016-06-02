@@ -16,6 +16,11 @@ public class Rewriter {
 	public static String rewrite_main(ParseTree tree)
 	{
 		String result="";
+		UnionTree<String> reliance=new UnionTree<String>();
+		HashMap<String,String> vartodefinition=new LinkedHashMap<String,String>();
+		//inside each partition, there is a where-list.
+		ArrayList<StringBuilder> wherelist=new ArrayList<StringBuilder>();
+		
 		//first find the entry point contains "for".
 		ParseTree begin=tree;
 		String resultTag=null;
@@ -38,13 +43,6 @@ public class Rewriter {
 		ParseTree whereclause=begin.getChild(1);
 		ParseTree returnclause=begin.getChild(2);
 		
-		//The partitions in the map.
-		ArrayList<LinkedHashMap<String,String>> partitions=new ArrayList<LinkedHashMap<String,String>>();
-		//from the variable to its partition.
-		LinkedHashMap<String,LinkedHashMap<String,String>> fromvartopartition=new LinkedHashMap<String,LinkedHashMap<String,String>>();
-		//inside each partition, there is a where-list.
-		ArrayList<StringBuilder> wherelist=new ArrayList<StringBuilder>();
-		
 		//first let us analysis for clause;
 		for(int i=0;i<forclause.getChildCount();i++)
 		{
@@ -56,32 +54,29 @@ public class Rewriter {
 				System.out.println("in :" +begin.getText());
 				if(begin.getText().contains("document") ||begin.getText().contains("doc"))
 				{
-					LinkedHashMap<String,String> partition=new LinkedHashMap<String,String>();
-					partition.put(current_element.getText(), begin.getText());
-					partitions.add(partition);
-					fromvartopartition.put(current_element.getText(), partition);
-					System.out.println("begin a partition!:"+partitions.indexOf(partition));
+					vartodefinition.put(current_element.getText(),begin.getText());
+					reliance.makeElement(current_element.getText());
 					wherelist.add(new StringBuilder(" "));
 				}
 				else
 				{
 					//find which partition it belongs.
-					for(int j=0;j<partitions.size();j++)
-					{
-						String parents=begin.getChild(0).getChild(0).getText();
-						if(partitions.get(j).containsKey(parents))
-						{
-							partitions.get(j).put(current_element.getText(), begin.getText());
-							fromvartopartition.put(current_element.getText(), partitions.get(j));
-							System.out.println("depends on :"+j);
-							break;
-						}
-					}
+					String parents=begin.getChild(0).getChild(0).getText();
+					System.out.println("wrong:"+parents);
+					TreeNode<String> parent=reliance.search(parents);
+					System.out.println("worng:"+parent);
+					vartodefinition.put(current_element.getText(),begin.getText());
+					TreeNode<String> current=reliance.makeElement(current_element.getText());
+					System.out.println(current.data);
+					System.out.println(parent.data);
+					reliance.mergeAtoB(current, parent);
+					
 				}
 				i+=2;
 			}
 		}
-		if(partitions.size()<2)
+		
+		if(reliance.size()<2)
 			return "";
 		String whereContent=whereclause.getChild(1).getText();
 		System.out.println("String of where:");
@@ -96,7 +91,7 @@ public class Rewriter {
 		String join="";
 		String first="";
 		//cause professor says on piazza, the testcase can either be complete joinize or not.
-		while(partitions.size()>=2)
+		while(reliance.size()>=2)
 		{
 			//in the loop, we do one join-rewriting.
 			ArrayList<String> firstjointarget=new ArrayList<String>();
@@ -106,22 +101,22 @@ public class Rewriter {
 				//System.out.println("!!!"+cond.toString());
 				String currentCond=cond.get(i);
 				String [] condleftandright=currentCond.split("eq|=");
-				LinkedHashMap<String,String> leftp=fromvartopartition.get(condleftandright[0]);
-				LinkedHashMap<String,String> rightp=fromvartopartition.get(condleftandright[1]);
+				int leftp=reliance.find(reliance.search(condleftandright[0]));
+				int rightp=reliance.find(reliance.search(condleftandright[1]));
 				if(leftp==rightp||!condleftandright[0].contains("$")||!condleftandright[1].contains("$"))
 				{//cannot be rewrite to join.
 					int partition_index;
 					if(!condleftandright[0].contains("$"))
 					{
-						partition_index=partitions.indexOf(rightp);
+						partition_index=rightp;
 					}
 					else
 					{
-						partition_index=partitions.indexOf(leftp);
+						partition_index=leftp;
 					}
 					wherelist.get(partition_index).append(" and "+ condleftandright[0]+" eq "+condleftandright[1]+" " );
 				}
-				else if(leftp!=rightp && leftp!=null &&rightp!=null)
+				else if(leftp!=rightp && leftp!=-1 &&rightp!=-1)
 				{//the condition that can be join.
 					if(firstjointarget.isEmpty() && secondjointarget.isEmpty())
 					{
@@ -129,17 +124,16 @@ public class Rewriter {
 						secondjointarget.add(condleftandright[1].substring(1));
 						
 					}
-					else if(fromvartopartition.get("$"+firstjointarget.get(0))==leftp && fromvartopartition.get("$"+secondjointarget.get(0))==rightp )
+					else if(reliance.find(reliance.search("$"+firstjointarget.get(0)))==leftp && reliance.find(reliance.search("$"+secondjointarget.get(0)))==rightp )
 					{
 						firstjointarget.add(condleftandright[0].substring(1));
 						secondjointarget.add(condleftandright[1].substring(1));
 						
 					}
-					else if(fromvartopartition.get("$"+secondjointarget.get(0))==leftp && fromvartopartition.get("$"+firstjointarget.get(0))==rightp )
+					else if(reliance.find(reliance.search("$"+secondjointarget.get(0)))==leftp && reliance.find(reliance.search("$"+firstjointarget.get(0)))==rightp )
 					{
 						secondjointarget.add(condleftandright[0].substring(1));
 						firstjointarget.add(condleftandright[1].substring(1));
-						
 					}
 					else
 						continue;
@@ -151,20 +145,21 @@ public class Rewriter {
 			}
 			//System.out.println("!"+firstjointarget.toString());
 			//System.out.println("!!"+secondjointarget.toString());
-			LinkedHashMap<String,String> partitionleft=fromvartopartition.get("$"+firstjointarget.get(0));
-			LinkedHashMap<String,String> partitionright=fromvartopartition.get("$"+secondjointarget.get(0));
+			int partitionleft=reliance.find(reliance.search("$"+firstjointarget.get(0)));
+			int partitionright=reliance.find(reliance.search("$"+secondjointarget.get(0)));
 			
 			if(initial_join_flag)
 			{
 				initial_join_flag=false;
 				first="for ";
-				for(String var:partitionleft.keySet())
+				ArrayList<TreeNode<String>> leftpartition=reliance.descendant(reliance.getRoot(partitionleft));
+				for(TreeNode<String> var:leftpartition)
 				{
-					first+= var+ " in "+partitionleft.get(var)+",\n";
+					first+= var.data+ " in "+vartodefinition.get(var.data)+",\n";
 				}
-				first=first.substring(0,first.length()-3);
+				first=first.substring(0,first.length()-2);
 				first+="\n";
-				StringBuilder where=wherelist.get(partitions.indexOf(partitionleft));
+				StringBuilder where=wherelist.get(partitionleft);
 				System.out.println("StringBuilder"+where.toString());
 				if(!where.toString().equals(" "))
 				{
@@ -172,24 +167,25 @@ public class Rewriter {
 					first+=wherestring;
 				}
 				first+="return <tuple> {\n";
-				for(String var:partitionleft.keySet())
+				
+				for(TreeNode<String> var:leftpartition)
 				{
-					first+="<"+var.substring(1)+">{\t"+var+"\t}"+"</"+var.substring(1)+">,";
+					first+="<"+var.data.substring(1)+">{\t"+var.data+"\t}"+"</"+var.data.substring(1)+">,";
 				}
 				first=first.substring(0, first.length()-1)+"\n}</tuple>,\n";
 				
-				//wherelist.remove(partitions.indexOf(partitionleft));
-				//partitions.remove(partitionleft);
+				//wherelist.remove(partitionleft);
 			}
 			//first="join( "+first;
 			String second="for ";
-			for(String var:partitionright.keySet())
+			ArrayList<TreeNode<String>> rightpartition=reliance.descendant(reliance.getRoot(partitionright));
+			for(TreeNode<String> var:rightpartition)
 			{
-				second+= var+ " in "+partitionright.get(var)+",\n";
+				second+= var.data+ " in "+vartodefinition.get(var.data)+",\n";
 			}
-			second=second.substring(0,second.length()-3);
+			second=second.substring(0,second.length()-2);
 			second+="\n";
-			StringBuilder where=wherelist.get(partitions.indexOf(partitionright));
+			StringBuilder where=wherelist.get(partitionright);
 			System.out.println("StringBuilder"+where.toString());
 			if(!where.toString().equals(" "))
 			{
@@ -197,9 +193,9 @@ public class Rewriter {
 				second+=wherestring;
 			}
 			second+="return <tuple> {\n";
-			for(String var:partitionright.keySet())
+			for(TreeNode<String> var:rightpartition)
 			{
-				second+="<"+var.substring(1)+">{\t"+var+"\t}"+"</"+var.substring(1)+">,";
+				second+="<"+var.data.substring(1)+">{\t"+var.data+"\t}"+"</"+var.data.substring(1)+">,";
 			}
 			second=second.substring(0, second.length()-1)+"\n}</tuple>,\n";
 			first+=second;
@@ -211,18 +207,14 @@ public class Rewriter {
 			join="join( "+first;
 			first=join;
 			//merge the partition on the right to the partition on the left.
-			for(Map.Entry<String,String> m: partitionright.entrySet())
-			{
-				partitionleft.put(m.getKey(), m.getValue());
-				fromvartopartition.replace(m.getKey(), partitionleft);
-			}
-			wherelist.remove(partitions.indexOf(partitionright));
-			partitions.remove(partitionright);
+			reliance.mergeAtoB(reliance.getRoot(partitionright), reliance.getRoot(partitionleft));
+			wherelist.remove(partitionright);
 			System.out.println(first);
 		}
 		result="for $tuple in "+join.substring(0,join.length()-1);
 		//dealing with return clause.
 		String returnclauseString=returnclause.getText();
+		returnclauseString=returnclauseString.substring(0, 6)+" "+returnclauseString.substring(6);
 		System.out.println(returnclauseString);
 		Pattern pattern1=Pattern.compile("\\$\\w+\\/text\\(\\)");//text()
 		Pattern pattern2=Pattern.compile("\\$\\w+\\/[^\\/]");//not //
