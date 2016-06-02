@@ -16,8 +16,10 @@ public class Rewriter {
 	public static String rewrite_main(ParseTree tree)
 	{
 		String result="";
+		//union tree is used to show the dependences, and tell if two var belong to the same partition. 
 		UnionTree<String> reliance=new UnionTree<String>();
-		HashMap<String,String> vartodefinition=new LinkedHashMap<String,String>();
+		//record variable name and its defination.
+		HashMap<String,String> vartodefinition=new HashMap<String,String>();
 		//inside each partition, there is a where-list.
 		ArrayList<StringBuilder> wherelist=new ArrayList<StringBuilder>();
 		
@@ -62,15 +64,10 @@ public class Rewriter {
 				{
 					//find which partition it belongs.
 					String parents=begin.getChild(0).getChild(0).getText();
-					System.out.println("wrong:"+parents);
 					TreeNode<String> parent=reliance.search(parents);
-					System.out.println("worng:"+parent);
 					vartodefinition.put(current_element.getText(),begin.getText());
 					TreeNode<String> current=reliance.makeElement(current_element.getText());
-					System.out.println(current.data);
-					System.out.println(parent.data);
 					reliance.mergeAtoB(current, parent);
-					
 				}
 				i+=2;
 			}
@@ -143,8 +140,6 @@ public class Rewriter {
 				cond.remove(currentCond);
 				i--;
 			}
-			//System.out.println("!"+firstjointarget.toString());
-			//System.out.println("!!"+secondjointarget.toString());
 			int partitionleft=reliance.find(reliance.search("$"+firstjointarget.get(0)));
 			int partitionright=reliance.find(reliance.search("$"+secondjointarget.get(0)));
 			
