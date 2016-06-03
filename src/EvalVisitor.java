@@ -226,9 +226,11 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		String tagName = ctx.Name(0).getText();
 		Node outer = document.createElement(tagName);
 		XqueryNodes inner = (XqueryNodes) visit(ctx.xq());
+		System.out.println("!"+inner);
 		for (int i = 0; i < inner.size(); i++) {
+			System.out.println("!!"+inner.get(i));
 			Node innerNode = document.importNode(inner.get(i), true);
-			outer.appendChild(innerNode);
+			outer.appendChild(innerNode.cloneNode(true));//...
 		}
 		return new XqueryNodes(outer);
 	}

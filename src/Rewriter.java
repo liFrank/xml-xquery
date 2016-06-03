@@ -214,7 +214,7 @@ public class Rewriter {
 		Pattern pattern1=Pattern.compile("\\$\\w+\\/text\\(\\)");//text()
 		Pattern pattern2=Pattern.compile("\\$\\w+\\/[^\\/]");//not //
 		Pattern pattern3=Pattern.compile("\\$\\w+[,| |\\n|}|\\t]");//nothing after
-		
+		String pattern4="([^\\>][ |\\n|\\t]*)([,|}])";
 		Matcher matcher1=pattern1.matcher(returnclauseString);
 		while(matcher1.find())
 		{
@@ -233,8 +233,8 @@ public class Rewriter {
 			String m3=matcher3.group(0);
 			returnclauseString=returnclauseString.replace(m3, m3.substring(0, m3.length()-1)+"/*"+m3.substring(m3.length()-1));
 		}
-		
-		result+=returnclauseString.replace("$","$tuple/");
+		returnclauseString=returnclauseString.replaceAll(pattern4, "$1"+")"+"$2");
+		result+=returnclauseString.replace("$","($tuple/");
 		
 		if(resultTag!=null)
 		{
