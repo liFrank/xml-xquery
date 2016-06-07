@@ -29,7 +29,7 @@ public class Rewriter {
 		if(!tree.getChild(0).getText().contains("for"))
 		{
 			resultTag=begin.getChild(1).getText();
-			System.out.println("the resultTag is "+resultTag);
+			//System.out.println("the resultTag is "+resultTag);
 			for(int i=0;i<tree.getChildCount();i++)
 			{
 				if(tree.getChild(i).getText().contains("for"))
@@ -52,8 +52,8 @@ public class Rewriter {
 			if(current_element.getText().contains("$"))
 			{
 				begin=forclause.getChild(i+2);
-				System.out.println("var: "+current_element.getText());
-				System.out.println("in :" +begin.getText());
+				//System.out.println("var: "+current_element.getText());
+				//System.out.println("in :" +begin.getText());
 				if(begin.getText().contains("document") ||begin.getText().contains("doc"))
 				{
 					vartodefinition.put(current_element.getText(),begin.getText());
@@ -76,12 +76,12 @@ public class Rewriter {
 		if(reliance.size()<2)
 			return "";
 		String whereContent=whereclause.getChild(1).getText();
-		System.out.println("String of where:");
+		//System.out.println("String of where:");
 		String [] condition=whereContent.split("and");
 		ArrayList<String> cond=new ArrayList<String>();
 		for(int i=0;i<condition.length;i++)
 		{
-			System.out.println(condition[i]);
+			//System.out.println(condition[i]);
 			cond.add(condition[i]);
 		}
 		boolean initial_join_flag=true;
@@ -155,7 +155,7 @@ public class Rewriter {
 				first=first.substring(0,first.length()-2);
 				first+="\n";
 				StringBuilder where=wherelist.get(partitionleft);
-				System.out.println("StringBuilder"+where.toString());
+				//System.out.println("StringBuilder"+where.toString());
 				if(!where.toString().equals(" "))
 				{
 					String wherestring="where "+where.substring(5)+"\n";
@@ -181,7 +181,7 @@ public class Rewriter {
 			second=second.substring(0,second.length()-2);
 			second+="\n";
 			StringBuilder where=wherelist.get(partitionright);
-			System.out.println("StringBuilder"+where.toString());
+			//System.out.println("StringBuilder"+where.toString());
 			if(!where.toString().equals(" "))
 			{
 				String wherestring="where "+where.substring(5)+"\n";
@@ -204,13 +204,13 @@ public class Rewriter {
 			//merge the partition on the right to the partition on the left.
 			reliance.mergeAtoB(reliance.getRoot(partitionright), reliance.getRoot(partitionleft));
 			wherelist.remove(partitionright);
-			System.out.println(first);
+			//System.out.println(first);
 		}
 		result="for $tuple in "+join.substring(0,join.length()-1);
 		//dealing with return clause.
 		String returnclauseString=returnclause.getText();
 		returnclauseString=returnclauseString.substring(0, 6)+" "+returnclauseString.substring(6);
-		System.out.println(returnclauseString);
+		//System.out.println(returnclauseString);
 		Pattern pattern1=Pattern.compile("\\$\\w+\\/text\\(\\)");//text()
 		Pattern pattern2=Pattern.compile("\\$\\w+\\/[^\\/]");//not //
 		Pattern pattern3=Pattern.compile("\\$\\w+[,| |\\n|}|\\t]");//nothing after
@@ -268,9 +268,7 @@ public class Rewriter {
 	        	//store result in a file
 	        	PrintWriter tofile=new PrintWriter("rewrited.txt");
 	        	tofile.print(rewritingresult);
-	        	tofile.close();
-	        	System.out.println("The rewrited file is stored as rewrited.txt.");
-	        	
+	        	tofile.close();   	
 	        }
 	        else
 	        {

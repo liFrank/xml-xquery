@@ -194,10 +194,10 @@ public class XqueryNodes implements IXqueryValue {
 	    try {
 	    	StringWriter writer = new StringWriter();
 	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-	        //transformerFactory.setAttribute("indent-number", 2);
+	        transformerFactory.setAttribute("indent-number", 2);
 	        Transformer transformer = transformerFactory.newTransformer();
 	        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-	        //transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+	        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 	        transformer.transform(new DOMSource(node), new StreamResult(writer));
 	        String output = writer.toString();
 	        return output;

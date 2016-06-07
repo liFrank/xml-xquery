@@ -11,7 +11,7 @@ xq	: Var																			#XQVar
 	| xq ',' xq																		#XQWithXQ
 	| xq '/' rp																		#XQChildren																			
 	| xq '//' rp																	#XQBoth
-	| '<' Name '>' '{' xq  '}' '</' Name '>'											#XQTag
+	| '<' Name '>' '{' xq '}' '</' Name '>'											#XQTag
 	| forClause (letClause | /*epsilon*/) (whereClause | /*epsilon*/) returnClause	#XQFor
 	| letClause xq																	#XQLet
 	| 'join' '(' xq ',' xq ',' nameList ',' nameList ')'							#XQJoin

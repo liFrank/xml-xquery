@@ -226,11 +226,8 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		String tagName = ctx.Name(0).getText();
 		Node outer = document.createElement(tagName);
 		XqueryNodes inner = (XqueryNodes) visit(ctx.xq());
-		System.out.println("!"+inner);
 		for (int i = 0; i < inner.size(); i++) {
-			System.out.println("!!"+inner.get(i));
 			Node innerNode = document.importNode(inner.get(i), true);
-			outer.appendChild(innerNode.cloneNode(true));//...
 		}
 		return new XqueryNodes(outer);
 	}
@@ -298,10 +295,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	 * @see XqueryBaseVisitor#visitReturnClause(XqueryParser.ReturnClauseContext)
 	 */
 	@Override public XqueryNodes visitReturnClause(XqueryParser.ReturnClauseContext ctx) { 
-		XqueryNodes pinter=(XqueryNodes) visit(ctx.xq()); 
-		//pinter.printNodes();
-		return pinter;
-		//return (XqueryNodes) visit(ctx.xq()); 
+		return (XqueryNodes) visit(ctx.xq()); 
 	}
 
 	/*
@@ -834,7 +828,6 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 				if(cmplist.size()==0)
 				{
 					cmplist=cmplist.concat(resfromleft.get(j).get(nodekeyorigin));
-					//System.out.println(cmplist.size());
 				}
 				else
 				{
@@ -859,7 +852,6 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 			}
 			if(cmplist.size()!=0)//somehow join success.
 			{
-				//System.out.println(cmplist.toString());
 				int lengthofnodeChildren=n.getChildNodes().getLength();
 				for(int m=0;m<cmplist.size();m++)
 				{

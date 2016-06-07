@@ -95,11 +95,11 @@ public class UnionTree<T> {
     	UnionTree<String> tree=new UnionTree<String>();
     	TreeNode<String> a1=(TreeNode<String>) tree.makeElement("a");
     	TreeNode<String> b1=(TreeNode<String>) tree.makeElement("b");
-    	System.out.println(tree.samePartition(a1, b1));
+//    	System.out.println(tree.samePartition(a1, b1));
     	tree.mergeAtoB(a1, b1);
-    	System.out.println(tree.samePartition(a1, b1));
-    	System.out.println(tree.search("a").data);
-    	System.out.println(tree.search("b").data);
+//    	System.out.println(tree.samePartition(a1, b1));
+//    	System.out.println(tree.search("a").data);
+//    	System.out.println(tree.search("b").data);
     	
     }
     
