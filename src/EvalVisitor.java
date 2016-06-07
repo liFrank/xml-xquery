@@ -228,6 +228,7 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		XqueryNodes inner = (XqueryNodes) visit(ctx.xq());
 		for (int i = 0; i < inner.size(); i++) {
 			Node innerNode = document.importNode(inner.get(i), true);
+			outer.appendChild(innerNode);
 		}
 		return new XqueryNodes(outer);
 	}

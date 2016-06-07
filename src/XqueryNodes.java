@@ -190,7 +190,24 @@ public class XqueryNodes implements IXqueryValue {
 		return new XqueryNodes(attribute);
 	}
 	
+	// Used by Rewriter (NO INDENTS!)
 	public String getNodeString(Node node) {
+	    try {
+	    	StringWriter writer = new StringWriter();
+	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+	        Transformer transformer = transformerFactory.newTransformer();
+	        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+	        transformer.transform(new DOMSource(node), new StreamResult(writer));
+	        String output = writer.toString();
+	        return output;
+	    } catch (TransformerException e) {
+	        e.printStackTrace();
+	    }
+	    return node.getTextContent();
+	}
+	
+	// Used to print Node information
+	public String getPrettyNodeString(Node node) {
 	    try {
 	    	StringWriter writer = new StringWriter();
 	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -208,10 +225,9 @@ public class XqueryNodes implements IXqueryValue {
 	}
 	
 	public void printNodes() {
-		//System.out.println("size of nodes: "+nodes.size());
 		for (int i = 0; i < nodes.size(); i++) {
 //			printNode(nodes.get(i));
-			System.out.println(getNodeString(nodes.get(i)));
+			System.out.println(getPrettyNodeString(nodes.get(i)));
 		}
 	}
 	
