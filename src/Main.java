@@ -1,3 +1,4 @@
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Scanner;
 
@@ -17,21 +18,44 @@ public class Main {
 		try {
 
 			String filePath;
+			boolean rewrite = false;
 			if (args.length > 0) // command-line argument
-				filePath = args[0];
+				filePath = args[args.length-1];
 			else { // user input on run
 				Scanner reader = new Scanner(System.in);  // Reading from System.in
 				System.out.println("Enter file path to query: ");
 				filePath = reader.next();
+				System.out.println("Rewrite query with join? (y/n)");
+				if (reader.next().toLowerCase().trim().equals("y"))
+					rewrite = true;
 				reader.close();
 			}
+//			System.out.println("Reading query from: " + filePath);
 			ANTLRFileStream input = new ANTLRFileStream(filePath);
 	        XqueryLexer lexer = new XqueryLexer(input);
-	
 	        CommonTokenStream tokens = new CommonTokenStream(lexer);
-	
 	        XqueryParser parser = new XqueryParser(tokens);
 	        ParseTree tree = parser.xq(); // begin parsing at rule 'xq'
+	        	        
+	        if (rewrite || Arrays.asList(args).contains("-rewrite")) {
+		        // Rewrite query with join
+		        String newQuery = Rewriter.rewrite_main(tree);
+	        	if (!newQuery.isEmpty()) { // rewriting occurred
+//	        		System.out.println("Rewriting query into rewrited.txt");
+	        		PrintWriter tofile = new PrintWriter("rewrited.txt");
+		        	tofile.print(newQuery);
+		        	tofile.close();  
+		        	input = new ANTLRFileStream("rewrited.txt");
+			        lexer = new XqueryLexer(input);
+			        tokens = new CommonTokenStream(lexer);
+			        parser = new XqueryParser(tokens);
+			        tree = parser.xq(); // begin parsing at rule 'xq'
+//			        System.out.println("Reading rewritten query from: " + "rewrited.txt");
+	        	}
+	        	else {
+//	        		System.out.println("No rewriting done");
+	        	}
+	        }
 	        EvalVisitor evalByVisitor = new EvalVisitor();
 	        XqueryNodes result = (XqueryNodes) evalByVisitor.visit(tree);
 	        result.printNodes();

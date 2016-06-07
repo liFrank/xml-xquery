@@ -14,7 +14,7 @@ xq	: Var																			#XQVar
 	| '<' Name '>' '{' xq '}' '</' Name '>'											#XQTag
 	| forClause (letClause | /*epsilon*/) (whereClause | /*epsilon*/) returnClause	#XQFor
 	| letClause xq																	#XQLet
-	| 'join' '(' xq ',' xq ',' NameList ',' NameList ')'							#XQJoin
+	| 'join' '(' xq ',' xq ',' nameList ',' nameList ')'							#XQJoin
 	;																	
 		
 // absolute path 
@@ -69,17 +69,17 @@ cond	: xq '=' xq													#ConditionEqual
 		| cond 'or' cond											#ConditionOr
 		| 'not' cond												#ConditionNot
 		;
+// attList
+nameList	: '[' Name (',' Name)* ']';
+
 
 // Literals must be capitalized
 
 // attName, tagName
-Name 		: ( 'a' .. 'z' | 'A' .. 'Z' | '_' )( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' )*;
+Name 		: ( 'a' .. 'z' | 'A' .. 'Z' | '_' )( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_'| '-' )*;
 
 // Var
 Var			: '$' Name;
-
-// attList
-NameList	: '[' Name (',' Name)* ']';
 
 // fileName, StringConstant
 String	: '"' ~('\n'|'\r'|'"')* '"';
