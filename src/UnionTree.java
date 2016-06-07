@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.List;
 
 public class UnionTree<T> {
 	private ArrayList<TreeNode<T>> roots; 

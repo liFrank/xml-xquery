@@ -4,6 +4,7 @@ import java.util.Scanner;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 import org.antlr.v4.gui.TreeViewer;
 import org.antlr.v4.runtime.*;
@@ -56,16 +57,26 @@ public class Main {
 //	        		System.out.println("No rewriting done");
 	        	}
 	        }
+	        
+	        // Timing and results
 	        EvalVisitor evalByVisitor = new EvalVisitor();
+	        final long startTime = System.currentTimeMillis();
 	        XqueryNodes result = (XqueryNodes) evalByVisitor.visit(tree);
 	        result.printNodes();
+	        final long endTime = System.currentTimeMillis();
+	        System.err.println("Total execution time: " + (endTime - startTime) + "ms");
+	        
+	        
 	        //show AST in GUI
 	        JFrame frame = new JFrame("Antlr AST");
 	        JPanel panel = new JPanel();
 	        TreeViewer viewr = new TreeViewer(Arrays.asList(parser.getRuleNames()),tree);
 	        viewr.setScale(1.5); //scale option
 	        panel.add(viewr);
-	        frame.add(panel);
+	        JScrollPane scrollPanel = new JScrollPane(panel, 
+	        		JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+	        		JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+	        frame.add(scrollPanel);
 	        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	        frame.pack();
 	        frame.setVisible(true);
