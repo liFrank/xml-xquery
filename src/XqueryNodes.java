@@ -1,4 +1,7 @@
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -190,8 +193,67 @@ public class XqueryNodes implements IXqueryValue {
 		return new XqueryNodes(attribute);
 	}
 	
-	// Used by Rewriter (NO INDENTS!)
-	public String getNodeString(Node node) {
+	/**
+     * Removes text nodes that only contains whitespace. The conditions for
+     * removing text nodes, besides only containing whitespace, are: If the
+     * parent node has at least one child of any of the following types, all
+     * whitespace-only text-node children will be removed: - ELEMENT child -
+     * CDATA child - COMMENT child
+     * 
+     * The purpose of this is to make the format() method (that use a
+     * Transformer for formatting) more consistent regarding indenting and line
+     * breaks.
+     */
+
+    private static void cleanEmptyTextNodes(Node parentNode) {
+        boolean removeEmptyTextNodes = false;
+        Node childNode = parentNode.getFirstChild();
+        while (childNode != null) {
+            removeEmptyTextNodes |= checkNodeTypes(childNode);
+            childNode = childNode.getNextSibling();
+        }
+
+        if (removeEmptyTextNodes) {
+            removeEmptyTextNodes(parentNode);
+        }
+    }
+
+    private static void removeEmptyTextNodes(Node parentNode) {
+        Node childNode = parentNode.getFirstChild();
+        while (childNode != null) {
+            // grab the "nextSibling" before the child node is removed
+            Node nextChild = childNode.getNextSibling();
+
+            short nodeType = childNode.getNodeType();
+            if (nodeType == Node.TEXT_NODE) {
+                boolean containsOnlyWhitespace = childNode.getNodeValue()
+                        .trim().isEmpty();
+                if (containsOnlyWhitespace) {
+                    parentNode.removeChild(childNode);
+                }
+            }
+            childNode = nextChild;
+        }
+    }
+
+    private static boolean checkNodeTypes(Node childNode) {
+        short nodeType = childNode.getNodeType();
+
+        if (nodeType == Node.ELEMENT_NODE) {
+            cleanEmptyTextNodes(childNode); // recurse into subtree
+        }
+
+        if (nodeType == Node.ELEMENT_NODE
+                || nodeType == Node.CDATA_SECTION_NODE
+                || nodeType == Node.COMMENT_NODE) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+	
+    // Used to determine attribute equality for join
+	public static String getNodeString(Node node) {
 	    try {
 	    	StringWriter writer = new StringWriter();
 	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -208,6 +270,7 @@ public class XqueryNodes implements IXqueryValue {
 	
 	// Used to print Node information
 	public String getPrettyNodeString(Node node) {
+		cleanEmptyTextNodes(node);
 	    try {
 	    	StringWriter writer = new StringWriter();
 	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -226,36 +289,24 @@ public class XqueryNodes implements IXqueryValue {
 	
 	public void printNodes() {
 		for (int i = 0; i < nodes.size(); i++) {
-//			printNode(nodes.get(i));
 			System.out.println(getPrettyNodeString(nodes.get(i)));
 		}
 	}
 	
-//	private void printNode(Node rootNode) {
-//	    System.out.print(rootNode.getNodeName());
-//	    if (rootNode.getNodeType() == Node.ELEMENT_NODE) {
-//	    	System.out.print(", Node Type: " + "ELEMENT_NODE");
-//	    	String textContent = "";
-//	    	NodeList children = rootNode.getChildNodes();
-//	    	for (int i = 0; i < children.getLength(); i++) {
-//				Node child = children.item(i);
-//				if (child.getNodeType() == Node.TEXT_NODE) {
-//					textContent = child.getTextContent();
-//				}
-//	    	}
-//	    	if (!textContent.isEmpty())
-//	    		System.out.println(" -> " + textContent);
-//	    }
-//	    else if (rootNode.getNodeType() == Node.TEXT_NODE) {
-//	    	System.out.print(", Node Type: " + "TEXT_NODE");
-//	    	String textContent = rootNode.getTextContent();
-//	    	System.out.println(" -> " + textContent);
-//	    }
-//	    else if (rootNode.getNodeType() == Node.ATTRIBUTE_NODE) {
-//	    	System.out.println(", Node Type: " + "ATTRIBUTE_NODE");
-//	    }
-//	    else {
-//	    	System.out.println(", Node Type: " + rootNode.getNodeType());
-//	    }
-//	}
+	public void printNodesToFile(String filename) {
+		PrintWriter writer = null;
+		try {
+			writer = new PrintWriter(filename, "UTF-8");
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		for (int i = 0; i < nodes.size(); i++) {
+			writer.println(getPrettyNodeString(nodes.get(i)));
+		}
+		writer.close();
+	}
 }

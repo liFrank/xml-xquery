@@ -779,92 +779,83 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 	 */
 	@Override public XqueryNodes visitXQJoin(XqueryParser.XQJoinContext ctx) 
 	{
-		XqueryNodes res=new XqueryNodes();
-		XqueryNodes left=(XqueryNodes) visit(ctx.xq(0));
-		int lengthofNameList=ctx.nameList(0).Name().size();
-		ArrayList<HashMap<String,XqueryNodes>> resfromleft=new ArrayList<HashMap<String,XqueryNodes>>();
+		// For left set of tuples, for each one, go through each attribute value from namelist, create specific hashkey. 
+		// For other set of tuples: for each one, create hashkey and match with hashtable. 
+		// Combine set of matched tuples with current tuple and add to result, repeat
 		
-		for(int i=0;i<lengthofNameList;i++)
-		{
-			String var=ctx.nameList(0).Name(i).getText();//tb
-			HashMap<String,XqueryNodes> Hashofvar=new HashMap<String,XqueryNodes>();
-			for(int j=0;j<left.size();j++)
-			{
-				Node n=left.get(j);
-				Element leftnode=(Element) n;
-				XqueryNodes leftnodesbytag=new XqueryNodes(leftnode.getElementsByTagName(var).item(0));
-				String nodekey=leftnodesbytag.getNodeString(leftnodesbytag.get(0));
-				String nodekeyorigin=nodekey.substring(2+var.length(), nodekey.length()-3-var.length());
-				if(Hashofvar.containsKey(nodekeyorigin))
-				{
-					Hashofvar.get(nodekeyorigin).add(n.cloneNode(true));
+		XqueryNodes result = new XqueryNodes();
+		XqueryNodes leftTuples = (XqueryNodes) visit(ctx.xq(0));
+		XqueryParser.NameListContext leftAttrs = ctx.nameList(0); 
+		XqueryNodes rightTuples = (XqueryNodes) visit(ctx.xq(1));
+		XqueryParser.NameListContext rightAttrs = ctx.nameList(1);
+		
+		// hash on attribute value
+		HashMap<String, XqueryNodes> hashtable = new HashMap<String, XqueryNodes>();
+		for (int i = 0; i < leftTuples.size(); i++) {
+			XqueryNodes tuple = new XqueryNodes(leftTuples.get(i));
+			// hashkey with current tuple
+			String hashkey = "";
+			for (int j = 0; j < leftAttrs.Name().size(); j++) {
+				String leftAttrName = leftAttrs.Name(j).getText();
+				XqueryNodes attrNode = tuple.getChildren(leftAttrName);
+				String attrValue;
+				if (attrNode.size() == 0) {
+					System.err.println("Problem with join -- left tuple attribute: " + leftAttrName);
+					attrValue = "";
 				}
-				else
-				{
-					XqueryNodes defaultlist=new XqueryNodes();
-					defaultlist.add(n.cloneNode(true));
-					Hashofvar.put(nodekeyorigin, defaultlist);
+				else {
+					attrValue = XqueryNodes.getNodeString(attrNode.get(0));
+					// trim the differing parent tag
+					attrValue = attrValue.substring(2+leftAttrName.length(), attrValue.length()-3-leftAttrName.length());
 				}
+				hashkey = hashkey + j + ":" + attrValue + "\n";
 			}
-			resfromleft.add(i,Hashofvar);
-		}
-		XqueryNodes right=(XqueryNodes) visit(ctx.xq(1));
-		XqueryNodes cmplist=new XqueryNodes();
-		for(int i=0;i<right.size();i++)
-		{
-			Node n=right.get(i);
-			Element rightnode=(Element) n;
-			for(int j=0;j<lengthofNameList;j++)
-			{
-				String var=ctx.nameList(1).Name(j).getText();//ta
-				XqueryNodes rightnodesbytag=new XqueryNodes(rightnode.getElementsByTagName(var).item(0));
-				String nodekey=rightnodesbytag.getNodeString(rightnodesbytag.get(0));
-				String nodekeyorigin=nodekey.substring(2+var.length(), nodekey.length()-3-var.length());
-				
-				if(!resfromleft.get(j).containsKey(nodekeyorigin))
-				{
-					cmplist.clear();
-					break;
-				}
-				if(cmplist.size()==0)
-				{
-					cmplist=cmplist.concat(resfromleft.get(j).get(nodekeyorigin));
-				}
-				else
-				{
-					HashSet<String> uniquebycontent=new HashSet<String>();
-					XqueryNodes judgee= resfromleft.get(j).get(nodekeyorigin);
-					XqueryNodes reduced=new XqueryNodes();
-					for(int k=0;k<cmplist.size();k++)
-					{
-						XqueryNodes onenode=new XqueryNodes(cmplist.get(k));
-						uniquebycontent.add(onenode.getNodeString(onenode.get(0)));
-					}
-					for(int k=0;k<judgee.size();k++)
-					{
-						XqueryNodes onenode=new XqueryNodes(judgee.get(k));
-						if(uniquebycontent.contains(onenode.getNodeString(onenode.get(0))))
-						{
-							reduced.add(onenode.get(0).cloneNode(true));
-						}
-					}
-					cmplist=reduced;
-				}
+			// Update hashtable
+			if (hashtable.containsKey(hashkey)) {
+				hashtable.get(hashkey).add(tuple.get(0));
 			}
-			if(cmplist.size()!=0)//somehow join success.
-			{
-				int lengthofnodeChildren=n.getChildNodes().getLength();
-				for(int m=0;m<cmplist.size();m++)
-				{
-					for(int j=0;j<lengthofnodeChildren;j++)
-					{
-						cmplist.get(m).appendChild(n.getChildNodes().item(j).cloneNode(true));
-					}
-				}
-				res=res.concat(cmplist);
-				cmplist.clear();
+			else {
+				hashtable.put(hashkey, new XqueryNodes());
+				hashtable.get(hashkey).add(tuple.get(0));
 			}
 		}
-		return res;
+		
+		for (int i = 0; i < rightTuples.size(); i++) {
+			XqueryNodes tuple = new XqueryNodes(rightTuples.get(i));
+			// hashkey with current tuple
+			String hashkey = "";
+			for (int j = 0; j < rightAttrs.Name().size(); j++) {
+				String rightAttrName = rightAttrs.Name(j).getText();
+				XqueryNodes attrNode = tuple.getChildren(rightAttrName);
+				String attrValue;
+				if (attrNode.size() == 0) {
+					System.err.println("Problem with join -- right tuple attribute: " + rightAttrName);
+					attrValue = "";
+				}
+				else {
+					attrValue = XqueryNodes.getNodeString(attrNode.get(0));
+					// trim the differing parent tag
+					attrValue = attrValue.substring(2+rightAttrName.length(), attrValue.length()-3-rightAttrName.length());
+				}
+				hashkey = hashkey + j + ":" + attrValue + "\n";
+			}
+			// if there is a key match, join current tuple with tuples in hashtable with key
+			if (hashtable.containsKey(hashkey)) {
+				XqueryNodes build = hashtable.get(hashkey);
+				XqueryNodes probeChildren = tuple.getChildren();
+				for (int k = 0; k < build.size(); k++) {
+					XqueryNodes buildTuple = new XqueryNodes(build.get(k));
+					XqueryNodes buildChildren = buildTuple.getChildren();
+					XqueryNodes combined = buildChildren.concat(probeChildren);
+					Node outer = document.createElement("tuple");
+					for (int l = 0; l < combined.size(); l++) {
+						Node innerNode = combined.get(l).cloneNode(true);
+						outer.appendChild(innerNode);
+					}
+					result.add(outer);
+				}
+			}
+		}
+		return result;
 	}
 }
