@@ -1,11 +1,19 @@
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryNotificationInfo;
+import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.MemoryType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
+import javax.management.Notification;
+import javax.management.NotificationEmitter;
+import javax.management.NotificationListener;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -771,71 +779,41 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 		XqueryNodes current=rpContext.peek();
 		return current.getAttributeNodes(ctx.Name().getText());
 	}
+	
 	/*
-	 * # 'join' '(' xq ',' xq ',' NameList ',' NameList ')'
-	 * #XQJoin
-	 * Jialong
-	 *
+	 * For use with #XQJoin rule
+	 * Perform join between two set of tuples
+	 * One set is in a hashtable
 	 */
-	@Override public XqueryNodes visitXQJoin(XqueryParser.XQJoinContext ctx) 
-	{
-		// For left set of tuples, for each one, go through each attribute value from namelist, create specific hashkey. 
-		// For other set of tuples: for each one, create hashkey and match with hashtable. 
-		// Combine set of matched tuples with current tuple and add to result, repeat
-		
-		XqueryNodes result = new XqueryNodes();
-		XqueryNodes leftTuples = (XqueryNodes) visit(ctx.xq(0));
-		XqueryParser.NameListContext leftAttrs = ctx.nameList(0); 
-		XqueryNodes rightTuples = (XqueryNodes) visit(ctx.xq(1));
-		XqueryParser.NameListContext rightAttrs = ctx.nameList(1);
-		
-		// hash on attribute value
-		HashMap<String, XqueryNodes> hashtable = new HashMap<String, XqueryNodes>();
-		for (int i = 0; i < leftTuples.size(); i++) {
-			XqueryNodes tuple = new XqueryNodes(leftTuples.get(i));
+	
+	class JoinParams { // encapsulate data passed around
+		public HashMap<String, XqueryNodes> hashtable;
+		public XqueryNodes result;
+		public XqueryNodes rightTuples;
+		public XqueryParser.NameListContext rightAttrs;
+	}
+	
+	public void joinTuples(JoinParams jp) {
+		HashMap<String, XqueryNodes> hashtable = jp.hashtable;
+		XqueryNodes result = jp.result;
+		XqueryNodes tuples = jp.rightTuples;
+		XqueryParser.NameListContext attrs = jp.rightAttrs;
+		for (int i = 0; i < tuples.size(); i++) {
+			XqueryNodes tuple = new XqueryNodes(tuples.get(i));
 			// hashkey with current tuple
 			String hashkey = "";
-			for (int j = 0; j < leftAttrs.Name().size(); j++) {
-				String leftAttrName = leftAttrs.Name(j).getText();
-				XqueryNodes attrNode = tuple.getChildren(leftAttrName);
+			for (int j = 0; j < attrs.Name().size(); j++) {
+				String attrName = attrs.Name(j).getText();
+				XqueryNodes attrNode = tuple.getChildren(attrName);
 				String attrValue;
 				if (attrNode.size() == 0) {
-					System.err.println("Problem with join -- left tuple attribute: " + leftAttrName);
+					System.err.println("Problem with join -- right tuple attribute: " + attrName);
 					attrValue = "";
 				}
 				else {
 					attrValue = XqueryNodes.getNodeString(attrNode.get(0));
 					// trim the differing parent tag
-					attrValue = attrValue.substring(2+leftAttrName.length(), attrValue.length()-3-leftAttrName.length());
-				}
-				hashkey = hashkey + j + ":" + attrValue + "\n";
-			}
-			// Update hashtable
-			if (hashtable.containsKey(hashkey)) {
-				hashtable.get(hashkey).add(tuple.get(0));
-			}
-			else {
-				hashtable.put(hashkey, new XqueryNodes());
-				hashtable.get(hashkey).add(tuple.get(0));
-			}
-		}
-		
-		for (int i = 0; i < rightTuples.size(); i++) {
-			XqueryNodes tuple = new XqueryNodes(rightTuples.get(i));
-			// hashkey with current tuple
-			String hashkey = "";
-			for (int j = 0; j < rightAttrs.Name().size(); j++) {
-				String rightAttrName = rightAttrs.Name(j).getText();
-				XqueryNodes attrNode = tuple.getChildren(rightAttrName);
-				String attrValue;
-				if (attrNode.size() == 0) {
-					System.err.println("Problem with join -- right tuple attribute: " + rightAttrName);
-					attrValue = "";
-				}
-				else {
-					attrValue = XqueryNodes.getNodeString(attrNode.get(0));
-					// trim the differing parent tag
-					attrValue = attrValue.substring(2+rightAttrName.length(), attrValue.length()-3-rightAttrName.length());
+					attrValue = attrValue.substring(2+attrName.length(), attrValue.length()-3-attrName.length());
 				}
 				hashkey = hashkey + j + ":" + attrValue + "\n";
 			}
@@ -856,6 +834,92 @@ public class EvalVisitor extends XqueryBaseVisitor<IXqueryValue>{
 				}
 			}
 		}
-		return result;
+	}
+	
+
+	/*
+	 * # 'join' '(' xq ',' xq ',' NameList ',' NameList ')'
+	 * #XQJoin
+	 * Jialong
+	 *
+	 */
+	@Override public XqueryNodes visitXQJoin(XqueryParser.XQJoinContext ctx) 
+	{
+		JoinParams handback = new JoinParams();
+		
+		// For hashing on attribute values
+		handback.hashtable = new HashMap<String, XqueryNodes>();
+		
+		// For left set of tuples, for each one, create hashkey using attr values, put into hashtable. 
+		// For other set of tuples: for each one, create hashkey and match with hashtable. 
+		// Combine set of matched tuples with current tuple and add to result, repeat
+		
+		handback.result = new XqueryNodes();
+		XqueryNodes leftTuples = (XqueryNodes) visit(ctx.xq(0));
+		XqueryParser.NameListContext leftAttrs = ctx.nameList(0); 
+		handback.rightTuples = (XqueryNodes) visit(ctx.xq(1));
+		handback.rightAttrs = ctx.nameList(1);
+		
+		// Listen and handle low memory. Do premature joins if needed
+		MemoryPoolMXBean tenuredGenPool = null;
+		for (MemoryPoolMXBean pool : ManagementFactory.getMemoryPoolMXBeans()) {
+			// see http://www.javaspecialists.eu/archive/Issue092.html
+			if (pool.getType() == MemoryType.HEAP && pool.isUsageThresholdSupported())
+				tenuredGenPool = pool;
+        }
+		// setting the threshold to 80% usage of the memory
+        tenuredGenPool.setCollectionUsageThreshold((int)Math.floor(tenuredGenPool.getUsage().getMax()*0.8));
+        tenuredGenPool.setUsageThreshold((int)Math.floor(tenuredGenPool.getUsage().getMax()*0.8));
+        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+        NotificationEmitter emitter = (NotificationEmitter) mbean;
+        emitter.addNotificationListener(new NotificationListener() {
+        	public void handleNotification(Notification n, Object hb) {
+        		if (n.getType().equals(MemoryNotificationInfo.MEMORY_COLLECTION_THRESHOLD_EXCEEDED)) {
+	                System.err.println("memory collection threshold exceeded !!!");
+	                JoinParams jp = (JoinParams) hb;
+	                joinTuples(jp);
+	                jp.hashtable.clear();
+        		} 
+	            else if (n.getType().equals(MemoryNotificationInfo.MEMORY_THRESHOLD_EXCEEDED)) {
+	                System.out.println("memory threshold exceeded !!!");
+	                JoinParams jp = (JoinParams) hb;
+	                joinTuples(jp);
+	                jp.hashtable.clear();
+	            }
+    		}
+        }, null, handback);
+		
+        // Generate hashtable
+		for (int i = 0; i < leftTuples.size(); i++) {
+			XqueryNodes tuple = new XqueryNodes(leftTuples.get(i));
+			// hashkey with current tuple
+			String hashkey = "";
+			for (int j = 0; j < leftAttrs.Name().size(); j++) {
+				String leftAttrName = leftAttrs.Name(j).getText();
+				XqueryNodes attrNode = tuple.getChildren(leftAttrName);
+				String attrValue;
+				if (attrNode.size() == 0) {
+					System.err.println("Problem with join -- left tuple attribute: " + leftAttrName);
+					attrValue = "";
+				}
+				else {
+					attrValue = XqueryNodes.getNodeString(attrNode.get(0));
+					// trim the differing parent tag
+					attrValue = attrValue.substring(2+leftAttrName.length(), attrValue.length()-3-leftAttrName.length());
+				}
+				hashkey = hashkey + j + ":" + attrValue + "\n";
+			}
+			// Update hashtable
+			if (handback.hashtable.containsKey(hashkey)) {
+				handback.hashtable.get(hashkey).add(tuple.get(0));
+			}
+			else {
+				handback.hashtable.put(hashkey, new XqueryNodes());
+				handback.hashtable.get(hashkey).add(tuple.get(0));
+			}
+		}
+		joinTuples(handback);
+		
+		return handback.result;
 	}
 }
